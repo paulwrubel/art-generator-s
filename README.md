@@ -1,1 +1,1 @@
-# image-generator
+# Art Generator S - Scala Edition

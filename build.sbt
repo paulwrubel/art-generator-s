@@ -1,4 +1,4 @@
-name := "imagegenerator"
+name := "art-generator-s"
 
 version := "0.1"
 
