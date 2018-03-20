@@ -21,12 +21,12 @@ object Generator {
         val image = getImage
 
         println("Getting pixel map...")
-        val pixelData = getPixelData(image)
 
         println("Assigning colors to pixels...")
-        fillImage(image, pixelData)
+        val pixels = getPixels
 
         println("Putting colors on art")
+        writeColors(image, pixels)
 
         println("printing object to file...")
 
@@ -34,154 +34,115 @@ object Generator {
 
     }
 
-    private def getImage: WritableImage = new WritableImage(Width, Height)
+    private def getPixels: mutable.Map[Pixel, PixelData] = {
 
-    private def getPixelData(image: WritableImage): mutable.Map[(Int, Int), ((Int, Int), PixelStatus, Color)] = {
+        val empty: mutable.Map[Pixel, PixelData] = mutable.Map(
+                (for (
+                    x <- 0 until Width;
+                    y <- 0 until Height
+                ) yield Pixel(x, y) -> PixelData()): _*)
+        val filled = mutable.Map[Pixel, PixelData]()
+        val progress = mutable.Map[Pixel, PixelData]()
 
-        val pixelData = mutable.HashMap[(Int, Int), ((Int, Int), PixelStatus, Color)]()
-
-        for (
-            x <- 0 until Width;
-            y <- 0 until Height
-        ) {
-            pixelData += ((x, y) -> (null, PixelStatus.empty, null))
-        }
-
-        pixelData
-    }
-
-    private def fillImage(image: WritableImage,
-                          pixelData: mutable.Map[(Int, Int), ((Int, Int), PixelStatus, Color)]
-                         ): Unit = {
-
-        val seedLocation = (Random.nextInt(Width), Random.nextInt(Height))
+        val seed = Pixel(Random.nextInt(Width), Random.nextInt(Height))
+        val seedData = PixelData(Some(Color.hsb(Random.nextDouble() * 360, 0.8, 0.8)))
 
         // create seed
-        pixelData(seedLocation) = (
-                null,
-                PixelStatus.complete,
-                Color.hsb(Random.nextDouble() * 360, 0.8, 0.8)
-        )
+        filled(seed) = seedData
+        empty -= seed
 
         // set neighboring pixels parents as seed and mark as changing
-        val n = getNeighbors(pixelData, mutable.Map(seedLocation -> pixelData(seedLocation)))
-        pixelData ++= n
+        val neighbors = getNeighbors(mutable.Map(seed -> seedData), empty)
+        progress ++= neighbors
+        empty --= neighbors.keys
 
-        var test = 0
+        var count = 0
 
         // while image is not filled
-        while (pixelData.exists(_._2._2 == PixelStatus.empty)) {
-
-            //println(pixelData.count(_._2._2 == PixelStatus.empty))
-
-
-            // get all current seeds
-            val seeds = pixelData.filter(_._2._2 == PixelStatus.toChange)
-
-
+        while (empty.nonEmpty) {
 
             val time1 = System.nanoTime()
 
-            // set their color based on parent and mark them as completed
-            seeds.mapValues((v) =>
-                (v._1, PixelStatus.complete, getVariedColor( pixelData( v._1 )._3) )
-            )
+            // set their color based on parent
+            progress.mapValues(p => {
+                PixelData(Some(getVariedColor(filled(p.parent.get).color.get)))
+            })
 
+            // get their neighbors
+            val neighbors = getNeighbors(progress, empty)
 
             val time2 = System.nanoTime()
 
-            // get their neighbors
-            val neighbors = getNeighbors(pixelData, seeds)
+            // move pixels to completed
+            filled ++= progress
+            progress.clear()
 
-            // mark their neighbors as changing and set their parent to seeds
-            pixelData ++= neighbors
+            // move neighbors to progress
+            progress ++= neighbors
+            empty --= neighbors.keys
 
-            test += 1
-
-            if (test % 5 == 0) println("Time this round: " + (time2 - time1)
-                    + ", Amount Done: " + pixelData.count(_._2._2 == PixelStatus.empty) + " / " + pixelData.size)
+            if (count % 5 == 0) {
+                println("Time this round: " + (time2 - time1) + ", Amount Done: " + empty.size + " / " + Width * Height)
+            }
+            count += 1
 
         }
 
+        filled
     }
 
-    private def getNeighbors(pixelData: mutable.Map[(Int, Int), ((Int, Int), PixelStatus, Color)],
-                             parents: mutable.Map[(Int, Int), ((Int, Int), PixelStatus, Color)]
-                            ): mutable.Map[(Int, Int), ((Int, Int), PixelStatus, Color)] = {
+    def writeColors(image: WritableImage, pixelToData: mutable.Map[Pixel, PixelData]): Unit = {
 
-        val neighbors = mutable.Map[(Int, Int), ((Int, Int), PixelStatus, Color)]()
+    }
 
-        parents.foreach(
-            (p) => {
-                neighbors((p._1._1 + 1, p._1._2    )) = (p._1, PixelStatus.toChange, null)
-                neighbors((p._1._1    , p._1._2 + 1)) = (p._1, PixelStatus.toChange, null)
-                neighbors((p._1._1 - 1, p._1._2    )) = (p._1, PixelStatus.toChange, null)
-                neighbors((p._1._1    , p._1._2 - 1)) = (p._1, PixelStatus.toChange, null)
+    def getVariedColor(color: Color): Color = {
+
+        def getNewValue(value: Double, variation: Double, lb: Double, ub: Double): Double = {
+
+            // get variation from -v to v
+            def getVariation(v: Double) = ( Random.nextDouble() * (-2 * v) ) + v
+
+            // get a new possible hue
+            val possibleValue = value + getVariation(variation)
+
+            // return true new value in valid range 0 to 360
+            if (possibleValue > ub) {
+                possibleValue - ub
+            } else if (possibleValue < lb) {
+                possibleValue + ub
+            } else {
+                possibleValue
             }
-        )
 
-        neighbors.filter((p) => pixelData.contains(p._1) && pixelData(p._1)._2 == PixelStatus.empty)
-    }
-
-    private def getVariedColor(color: Color): Color = {
+        }
 
         // get new values
-        val newHue = getNewHue(color.getHue)
-        val newSat = getNewSaturation(color.getSaturation)
-        val newBright = getNewBrightness(color.getBrightness)
+        val newHue = getNewValue(color.getHue, HueVariation, 0, 360)
+        val newSat = getNewValue(color.getSaturation, SaturationVariation, 0, 1)
+        val newBright = getNewValue(color.getBrightness, BrightnessVariation, 0, 1)
 
         Color.hsb(newHue, newSat, newBright)
     }
 
-    private def getNewHue(hue: Double): Double = {
+    def getNeighbors(parents: mutable.Map[Pixel, PixelData], empty: mutable.Map[Pixel, PixelData]
+                    ): mutable.Map[Pixel, PixelData] = {
 
-        // get a new possible hue
-        val possibleHue = hue + getVariation(HueVariation)
+        val neighbors = mutable.Map[Pixel, PixelData]()
 
-        // return true new value in valid range 0 to 360
-        if (possibleHue > 360) {
-            possibleHue - 360
-        } else if (possibleHue < 360) {
-            possibleHue + 360
-        } else {
-            possibleHue
-        }
+        parents.foreach(
+            p => {
+                neighbors += Pixel(p._1.x + 1, p._1.y    ) -> PixelData(parent = Some(p._1))
+                neighbors += Pixel(p._1.x    , p._1.y + 1) -> PixelData(parent = Some(p._1))
+                neighbors += Pixel(p._1.x - 1, p._1.y    ) -> PixelData(parent = Some(p._1))
+                neighbors += Pixel(p._1.x    , p._1.y - 1) -> PixelData(parent = Some(p._1))
+            }
+        )
 
+        neighbors.filter(p => empty.contains(p._1))
     }
 
-    private def getNewSaturation(sat: Double): Double = {
-
-        // get a new possible hue
-        val possibleSat = sat + getVariation(SaturationVariation)
-
-        // return true new value in valid range 0 to 360
-        if (possibleSat > 1) {
-            possibleSat - 1
-        } else if (possibleSat < 1) {
-            possibleSat + 1
-        } else {
-            possibleSat
-        }
-
-    }
-
-    private def getNewBrightness(bright: Double): Double = {
-
-        // get a new possible hue
-        val possibleBright = bright + getVariation(BrightnessVariation)
-
-        // return true new value in valid range 0 to 360
-        if (possibleBright > 1) {
-            possibleBright - 1
-        } else if (possibleBright < 1) {
-            possibleBright + 1
-        } else {
-            possibleBright
-        }
-
-    }
-
-    // get variation from -v to v
-    private def getVariation(v: Double) = ( Random.nextDouble() * (-2 * v) ) + v
-
+    def getImage: WritableImage = new WritableImage(Width, Height)
 }
+
+case class Pixel(x: Int, y: Int)
+case class PixelData(color: Option[Color] = None, parent: Option[Pixel] = None)
