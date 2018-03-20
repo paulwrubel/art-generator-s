@@ -10,10 +10,12 @@ import scala.util.Random
 
 object Generator {
 
-    private val Width = 500
-    private val Height = 500
+    private val Debug = true
 
-    private val Filename = "alpha"
+    private val Width = 1600
+    private val Height = 800
+
+    private val Filename = "alpha-large"
     private val Filepath = "./data/"
     private val Filetype = "png"
 
@@ -21,29 +23,58 @@ object Generator {
     private val SaturationVariation = 0.02
     private val BrightnessVariation = 0.02
 
+    private val HueLowerBound = 0
+    private val HueUpperBound = 360
+
+    private val SaturationLowerBound = 0.5
+    private val SaturationUpperBound = 1
+
+    private val BrightnessLowerBound = 0.6
+    private val BrightnessUpperBound = 1
+
     def main(args: Array[String]): Unit = {
 
         println("Starting art generation...")
 
         println("Getting image object...")
+        val imageTimeStart = System.nanoTime()
         val image = getImage
+        val imageTimeEnd = System.nanoTime()
 
-        println("Getting pixel map...")
-
-        println("Assigning colors to pixels...")
+        println("Beginning generation...")
+        val fillTimeStart = System.nanoTime()
         val pixels = getPixels
+        val fillTimeEnd = System.nanoTime()
 
         println("Putting colors on art")
+        val fileTimeStart = System.nanoTime()
         writeColors(image, pixels)
+        val fileTimeEnd = System.nanoTime()
 
         println("printing object to file...")
 
         println("Art generation completed!")
 
+        if (Debug) {
+            val imageTime = imageTimeEnd - imageTimeStart
+            val fillTime = fillTimeEnd - fillTimeStart
+            val fileTime = fileTimeEnd - fileTimeStart
+
+            println()
+            println("--- DEBUG INFO: ---")
+            println()
+            println("Image Size: " + Width + " x " + Height)
+            println()
+            println("Time to create WritableImage:  " + imageTime + "ns (" + imageTime / 1000000 + "ms)")
+            println("Time to fill Image with color: " + fillTime + "ns (" + fillTime / 1000000 + "ms)")
+            println("Time to print Image to File:   " + fileTime + "ns (" + fileTime / 1000000 + "ms)")
+        }
+
     }
 
     private def getPixels: mutable.Map[Pixel, PixelData] = {
 
+        println("    ...Getting pixel map...")
         val empty: mutable.Map[Pixel, PixelData] = mutable.Map(
                 (for (
                     x <- 0 until Width;
@@ -52,6 +83,7 @@ object Generator {
         val filled = mutable.Map[Pixel, PixelData]()
         val progress = mutable.Map[Pixel, PixelData]()
 
+        println("    ...Setting seeds...")
         val seed = Pixel(Random.nextInt(Width), Random.nextInt(Height))
         val seedData = PixelData(Some(Color.hsb(Random.nextDouble() * 360, 0.8, 0.8)))
 
@@ -67,6 +99,7 @@ object Generator {
         var count = 0
 
         // while image is not filled
+        println("    ...Starting rounds of generations...")
         while (empty.nonEmpty) {
 
             val time1 = System.nanoTime()
@@ -144,9 +177,9 @@ object Generator {
         }
 
         // get new values
-        val newHue = getNewValue(color.getHue, HueVariation, 0, 360)
-        val newSat = getNewValue(color.getSaturation, SaturationVariation, 0, 1)
-        val newBright = getNewValue(color.getBrightness, BrightnessVariation, 0, 1)
+        val newHue = getNewValue(color.getHue, HueVariation, HueLowerBound, HueUpperBound)
+        val newSat = getNewValue(color.getSaturation, SaturationVariation, SaturationLowerBound, SaturationUpperBound)
+        val newBright = getNewValue(color.getBrightness, BrightnessVariation, BrightnessLowerBound, BrightnessUpperBound)
 
         Color.hsb(newHue, newSat, newBright)
     }
