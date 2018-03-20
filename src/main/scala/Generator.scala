@@ -1,5 +1,9 @@
+import java.awt.Desktop
+import java.io.IOException
+import javafx.embed.swing.SwingFXUtils
 import javafx.scene.image.WritableImage
 import javafx.scene.paint.Color
+import javax.imageio.ImageIO
 
 import scala.collection.mutable
 import scala.util.Random
@@ -8,6 +12,10 @@ object Generator {
 
     private val Width = 500
     private val Height = 500
+
+    private val Filename = "alpha"
+    private val Filepath = "./data/"
+    private val Filetype = "png"
 
     private val HueVariation = 3.0
     private val SaturationVariation = 0.02
@@ -64,8 +72,8 @@ object Generator {
             val time1 = System.nanoTime()
 
             // set their color based on parent
-            progress.mapValues(p => {
-                PixelData(Some(getVariedColor(filled(p.parent.get).color.get)))
+            progress.transform((p,d) => {
+                PixelData(Some(getVariedColor(filled(d.parent.get).color.get)))
             })
 
             // get their neighbors
@@ -91,7 +99,26 @@ object Generator {
         filled
     }
 
-    def writeColors(image: WritableImage, pixelToData: mutable.Map[Pixel, PixelData]): Unit = {
+    def writeColors(image: WritableImage, pixels: mutable.Map[Pixel, PixelData]): Unit = {
+
+        // write colors from map into image file
+        pixels.foreach(p => {
+            image.getPixelWriter.setColor(p._1.x, p._1.y, p._2.color.get)
+        })
+
+        try {
+            var count = 1
+            var imageFile = new java.io.File(Filepath + Filename + "_" + count + "." + Filetype)
+            while ( imageFile.exists ) {
+                count += 1
+                imageFile = new java.io.File(Filepath + Filename + "_" + count + "." + Filetype)
+            }
+            ImageIO.write(SwingFXUtils.fromFXImage(image, null), Filetype, imageFile)
+            Desktop.getDesktop.open(imageFile)
+        } catch {
+            case ioe: IOException =>
+                ioe.printStackTrace()
+        }
 
     }
 
