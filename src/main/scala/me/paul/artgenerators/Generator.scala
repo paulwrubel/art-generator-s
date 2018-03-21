@@ -11,7 +11,11 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
+// TODO scaladoc
+
 object Generator {
+
+    // TODO Comment explainations
 
     def main(args: Array[String]): Unit = {
 
@@ -94,12 +98,14 @@ object Generator {
 
         // while image is not filled
         println("    ...Starting rounds of generations...")
+        // TODO change to function
         while (empty.nonEmpty) {
 
             val time1 = System.nanoTime()
 
             // set their color based on parent
             progress.transform((p,d) => {
+                // TODO safe check from Option gets
                 PixelData(Some(getVariedColor(filled(d.parent.get).color.get)))
             })
 
@@ -116,6 +122,8 @@ object Generator {
             progress ++= neighbors
             empty --= neighbors.keys
 
+            // TODO function interval printing
+            // TODO more readable / useful prints here
             if (count % 5 == 0) {
                 println("Time this round: " + (time2 - time1) + ", Amount Done: " + empty.size + " / " + Parameters.Width * Parameters.Height)
             }
@@ -130,6 +138,7 @@ object Generator {
 
         // write colors from map into image file
         pixels.foreach(p => {
+            // TODO safe check from Option gets
             image.getPixelWriter.setColor(p._1.x, p._1.y, p._2.color.get)
         })
 
