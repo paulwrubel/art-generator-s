@@ -7,8 +7,8 @@ object Parameters {
     val Width = 1920
     val Height = 1080
 
-    val Filename = "alpha"
-    val Filepath = "./out/images/alpha/1080p/"
+    val Filename = "beta"
+    val Filepath = "./out/images/beta/1080p/"
     val FileFormat = "png"
 
     val HueVariation = 3.0
