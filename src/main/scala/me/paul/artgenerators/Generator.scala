@@ -98,51 +98,35 @@ object Generator {
         println("    ...Starting rounds of generations...")
         whileLoop(empty.nonEmpty) {
 
-            val time1 = System.nanoTime()
-
             val tempAdd = mutable.Map[Pixel, PixelColor]()
             val tempRem = mutable.Map[Pixel, PixelColor]()
+
+            val time1 = System.nanoTime()
 
             // set their color based on parent
             progress.foreach(
                 p => {
                     var completed = true
 
-                    val northPixel = Pixel(p._1.x, p._1.y - 1)
-                    if (empty.contains(northPixel)) {
-                        if (randomUpTo(1) < Parameters.NorthSpreadChance) {
-                            tempAdd += northPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
-                        } else {
-                            completed = false
+                    def handlePixel(newPixel: Pixel, sc: Double): Unit = {
+                        if (empty.contains(newPixel)) {
+                            if (randomUpTo(1) < sc) {
+                                tempAdd += newPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
+                            } else {
+                                completed = false
+                            }
                         }
                     }
 
-                    val eastPixel = Pixel(p._1.x + 1, p._1.y)
-                    if (empty.contains(eastPixel)) {
-                        if (randomUpTo(1) < Parameters.EastSpreadChance) {
-                            tempAdd += eastPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
-                        } else {
-                            completed = false
-                        }
-                    }
+                    val northPixel = Pixel(p._1.x    , p._1.y - 1)
+                    val eastPixel =  Pixel(p._1.x + 1, p._1.y    )
+                    val southPixel = Pixel(p._1.x    , p._1.y + 1)
+                    val westPixel =  Pixel(p._1.x - 1, p._1.y    )
 
-                    val southPixel = Pixel(p._1.x, p._1.y + 1)
-                    if (empty.contains(southPixel)) {
-                        if (randomUpTo(1) < Parameters.SouthSpreadChance) {
-                            tempAdd += southPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
-                        } else {
-                            completed = false
-                        }
-                    }
-
-                    val westPixel = Pixel(p._1.x - 1, p._1.y)
-                    if (empty.contains(westPixel)) {
-                        if (randomUpTo(1) < Parameters.WestSpreadChance) {
-                            tempAdd += westPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
-                        } else {
-                            completed = false
-                        }
-                    }
+                    handlePixel(northPixel, Parameters.NorthSpreadChance)
+                    handlePixel(eastPixel, Parameters.EastSpreadChance)
+                    handlePixel(southPixel, Parameters.SouthSpreadChance)
+                    handlePixel(westPixel, Parameters.WestSpreadChance)
 
                     if (completed) {
                         tempRem += p
