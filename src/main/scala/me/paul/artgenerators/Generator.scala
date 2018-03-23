@@ -104,31 +104,10 @@ object Generator {
         // create seed
         write.setColor(seed._1, seed._2, seedColor)
 
-        var completed = true
-        var pixelCount = 1
-
-        def handlePixel(newPixel: (Int, Int), sc: Double): Unit = {
-            if (!read.getColor(newPixel._1, newPixel._2).isOpaque) {
-                if (randomUpTo(1) < sc) {
-                    write.setColor(newPixel._1, newPixel._2, getVariedColor( read.getColor(seed._1, seed._2) ))
-                    progress += newPixel
-                    pixelCount += 1
-                } else {
-                    completed = false
-                }
-            }
-        }
-
-        if (seed._2 != 0)                     handlePixel((seed._1    , seed._1 - 1), Parameters.NorthSpreadChance)
-        if (seed._1 != Parameters.Width - 1)  handlePixel((seed._1 + 1, seed._1    ), Parameters.EastSpreadChance)
-        if (seed._2 != Parameters.Height - 1) handlePixel((seed._1    , seed._1 + 1), Parameters.SouthSpreadChance)
-        if (seed._1 != 0)                     handlePixel((seed._1 - 1, seed._1    ), Parameters.WestSpreadChance)
-
-        if (completed) {
-            progress -= seed
-        }
+        progress += seed
 
         var count = 0
+        var pixelCount = 1
 
         // while image is not filled
         println("    ...Starting rounds of generations...")
@@ -167,7 +146,8 @@ object Generator {
             val time2 = System.nanoTime
 
             if (count % 10 == 0) {
-                println(f"Round $count%6d: " +
+                println(f"${progress.size}      " +
+                        f"Round $count%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
                         f"Pixels Completed: $pixelCount%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
                         f"[${100 * pixelCount.asInstanceOf[Double] / (Parameters.Width * Parameters.Height)}%6.2f%%]")

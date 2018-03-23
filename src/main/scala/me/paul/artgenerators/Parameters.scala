@@ -4,11 +4,11 @@ object Parameters {
 
     val Debug = true
 
-    val Width = 1920
-    val Height = 1080
+    val Width = 10000
+    val Height = 5000
 
     val Filename = "alpha"
-    val Filepath = "./out/images/alpha-lowmem/1080p/"
+    val Filepath = "./out/images/alpha-lowmem/10000x5000/"
     val FileFormat = "png"
 
     val HueVariation = 3.0
