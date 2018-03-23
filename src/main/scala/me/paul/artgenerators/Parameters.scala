@@ -4,10 +4,10 @@ object Parameters {
 
     val Debug = true
 
-    val Width = 3000
-    val Height = 1500
+    val Width = 1600
+    val Height = 800
 
-    val Filename = "alpha-largetest"
+    val Filename = "alpha"
     val Filepath = "./data/"
     val FileFormat = "png"
 

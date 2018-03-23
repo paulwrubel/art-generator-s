@@ -31,7 +31,7 @@ object Generator {
         val pixels = getPixels
         val fillTimeEnd = System.nanoTime()
 
-        println("Putting colors on art")
+        println("Putting colors on art...")
         val putColorsTimeStart = System.nanoTime()
         putColors(image, pixels)
         val putColorsTimeEnd = System.nanoTime()
@@ -50,21 +50,20 @@ object Generator {
             val putColorsTime = putColorsTimeEnd - putColorsTimeStart
             val fileTime = fileTimeEnd - fileTimeStart
 
-            val imagePerc = imageTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
-            val fillPerc = fillTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
-            val putColorsPerc = putColorsTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
-            val filePerc = fileTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
-
+            val imagePercentage = imageTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
+            val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
+            val putColorsPercentage = putColorsTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
+            val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
 
             println("--- DEBUG INFO: ---")
             println()
             println(f"Image Size: ${Parameters.Width} x ${Parameters.Height}")
             println(f"Total pixel count: ${Parameters.Width * Parameters.Height}")
             println()
-            println(f"Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePerc%6.2f%% of total time]")
-            println(f"Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPerc%6.2f%% of total time]")
-            println(f"Time to put colors on image:     $putColorsTime%,16dns (${putColorsTime / 1000000f}%,11.2fms) - [$putColorsPerc%6.2f%% of total time]")
-            println(f"Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePerc%6.2f%% of total time]")
+            println(f"Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
+            println(f"Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
+            println(f"Time to put colors on image:     $putColorsTime%,16dns (${putColorsTime / 1000000f}%,11.2fms) - [$putColorsPercentage%6.2f%% of total time]")
+            println(f"Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]")
             println()
         }
 
@@ -98,14 +97,13 @@ object Generator {
 
         // while image is not filled
         println("    ...Starting rounds of generations...")
-        // TODO change to function
-        while (empty.nonEmpty) {
+        whileLoop(empty.nonEmpty) {
 
             val time1 = System.nanoTime()
 
             // set their color based on parent
-            progress.transform((p,d) => {
-                // TODO safe check from Option gets
+            progress.transform((_,d) => {
+                // get is guaranteed to succeed here
                 PixelData(Some(getVariedColor(filled(d.parent.get).color.get)))
             })
 
@@ -122,10 +120,11 @@ object Generator {
             progress ++= neighbors
             empty --= neighbors.keys
 
-            // TODO function interval printing
-            // TODO more readable / useful prints here
-            if (count % 5 == 0) {
-                println("Time this round: " + (time2 - time1) + ", Amount Done: " + empty.size + " / " + Parameters.Width * Parameters.Height)
+            if (count % 10 == 0) {
+                println(f"Round $count%6d: " +
+                        f"Time: ${time2 - time1}%,15dns, " +
+                        f"Pixels Completed: ${filled.size}%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
+                        f"[${100 * filled.size.asInstanceOf[Double] / (Parameters.Width * Parameters.Height)}%6.2f%%]")
             }
             count += 1
 
@@ -138,7 +137,7 @@ object Generator {
 
         // write colors from map into image file
         pixels.foreach(p => {
-            // TODO safe check from Option gets
+            // get is guaranteed to succeed here
             image.getPixelWriter.setColor(p._1.x, p._1.y, p._2.color.get)
         })
 
@@ -149,7 +148,7 @@ object Generator {
         try {
             var count = 0
             val exists = (f: java.io.File) => f.exists()
-            val imageFile = doWhileYield[java.io.File]( exists ) {
+            val imageFile = doWhileYield[java.io.File](exists) {
                 count += 1
                 new java.io.File(Parameters.Filepath + Parameters.Filename + "_" + count + "." + Parameters.FileFormat)
             }
