@@ -4,20 +4,20 @@ object Parameters {
 
     val Debug = true
 
-    val Width = 12000
-    val Height = 6000
+    val Width = 1920
+    val Height = 1080
 
     val Filename = "alpha"
-    val Filepath = "./out/images/alpha/extralarge/"
+    val Filepath = "./out/images/alpha/1080p/"
     val FileFormat = "png"
 
     val HueVariation = 3.0
     val SaturationVariation = 0.02
     val BrightnessVariation = 0.02
 
-    val HueBounds: (Double, Double) = (0.0, 360.0)
-    val SaturationBounds: (Double, Double) = (0.75, 1)
-    val BrightnessBounds: (Double, Double) = (0.25, 1)
+    val HueBounds: (Double, Double) = (180.0, 360.0)
+    val SaturationBounds: (Double, Double) = (0.85, 1)
+    val BrightnessBounds: (Double, Double) = (0.85, 1)
 
     val NorthSpreadChance = 0.5
     val EastSpreadChance = 0.5
