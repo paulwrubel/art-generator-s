@@ -1,7 +1,7 @@
 package me.paul.artgenerators
 
 import java.awt.Desktop
-import java.io.IOException
+import java.io.{File, IOException}
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.image.WritableImage
 import javafx.scene.paint.Color
@@ -11,11 +11,29 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
-// TODO scaladoc
+// TODO more detailed scaladoc
+/** Main engine for art generation
+  *
+  * Creates generated artwork using scala, java, and [[javafx]] libraries.
+  *
+  * Creation is done procedurally, starting with one or more seeds.
+  * Colors are varied from the seed until the image is completed
+  *
+  * Implemented using [[WritableImage]], [[Color]] for data storage,
+  * abstracted through the [[Pixel]] and [[PixelColor]] case classes.
+  *
+  * data is also stored is several instances of [[mutable.Map]]
+  *
+  */
 
 object Generator {
 
     // TODO Comment explanations
+
+    /** entry point for Generator object
+      *
+      * @param args the arguments passed to this object
+      */
 
     def main(args: Array[String]): Unit = {
 
@@ -28,7 +46,7 @@ object Generator {
 
         println("Beginning generation...")
         val fillTimeStart = System.nanoTime()
-        val pixels = getPixels
+        val pixels = getPixelColors
         val fillTimeEnd = System.nanoTime()
 
         println("Putting colors on art...")
@@ -38,7 +56,7 @@ object Generator {
 
         println("printing object to file...")
         val fileTimeStart = System.nanoTime()
-        writeColors(image)
+        writeImageToFile(image, getFile)
         val fileTimeEnd = System.nanoTime()
 
         println("Art generation completed!")
@@ -69,7 +87,14 @@ object Generator {
 
     }
 
-    private def getPixels: mutable.Map[Pixel, PixelColor] = {
+    /** Returns a [[mutable.Map]] containing a map from a [[Pixel]] to a [[PixelColor]]
+      *
+      * It is used to attach final colors to the [[WritableImage]]
+      *
+      * @return a [[mutable.Map]] with final mapping from each [[Pixel]] to its final [[PixelColor]]
+      */
+
+    private def getPixelColors: mutable.Map[Pixel, PixelColor] = {
 
         println("    ...Getting pixel map...")
         val empty: mutable.Map[Pixel, PixelColor] = mutable.Map(
@@ -155,6 +180,12 @@ object Generator {
         filled
     }
 
+    /** Writes to a [[WritableImage]] colors corresponding to entries in a [[mutable.Map]]
+      *
+      * @param image the [[WritableImage]] to write to
+      * @param pixels a [[mutable.Map]] mapping a [[Pixel]] to its [[PixelColor]]
+      */
+
     def putColors(image: WritableImage, pixels: mutable.Map[Pixel, PixelColor]): Unit = {
 
         // write colors from map into image file
@@ -165,21 +196,35 @@ object Generator {
 
     }
 
-    def writeColors(image: WritableImage): Unit = {
-
-        try {
-            var count = 0
-            val exists = (f: java.io.File) => f.exists()
-            val imageFile = doWhileYield[java.io.File](exists) {
-                count += 1
-                new java.io.File(Parameters.Filepath + Parameters.Filename + "_" + count + "." + Parameters.FileFormat)
-            }
-            ImageIO.write(SwingFXUtils.fromFXImage(image, null), Parameters.FileFormat, imageFile)
-            Desktop.getDesktop.open(imageFile)
-        } catch {
-            case ioe: IOException =>
-                ioe.printStackTrace()
+    def getFile: File = {
+        val dir = new File(Parameters.Filepath)
+        if ( !dir.exists && !dir.mkdirs() ) {
+            throw new IOException("[ERROR]: COULD NOT CREATE NECESSARY DIRECTORIES")
         }
+
+        var count = 0
+        val exists = (f: File) => f.exists()
+        doWhileYield[File](exists) {
+            count += 1
+            new File(Parameters.Filepath + Parameters.Filename + "_" + count + "." + Parameters.FileFormat)
+        }
+    }
+
+    /** Writes a [[WritableImage]] to a [[File]]
+      *
+      * @param image the [[WritableImage]] to read write to a [[File]]
+      * @param file the [[File]] to write the [[WritableImage]] to
+      */
+
+    def writeImageToFile(image: WritableImage, file: File): Unit = {
+
+//        try {
+            ImageIO.write(SwingFXUtils.fromFXImage(image, null), Parameters.FileFormat, file)
+            Desktop.getDesktop.open(file)
+//        } catch {
+//            case ioe: IOException =>
+//                ioe.printStackTrace()
+//        }
 
     }
 
