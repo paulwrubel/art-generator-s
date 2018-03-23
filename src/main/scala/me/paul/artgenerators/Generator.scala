@@ -40,24 +40,24 @@ object Generator {
         println("Starting art generation...")
 
         println("Getting image object...")
-        val imageTimeStart = System.nanoTime()
+        val imageTimeStart = System.nanoTime
         val image = getImage
-        val imageTimeEnd = System.nanoTime()
+        val imageTimeEnd = System.nanoTime
 
         println("Beginning generation...")
-        val fillTimeStart = System.nanoTime()
+        val fillTimeStart = System.nanoTime
         val pixels = getPixelColors
-        val fillTimeEnd = System.nanoTime()
+        val fillTimeEnd = System.nanoTime
 
         println("Putting colors on art...")
-        val putColorsTimeStart = System.nanoTime()
+        val putColorsTimeStart = System.nanoTime
         putColors(image, pixels)
-        val putColorsTimeEnd = System.nanoTime()
+        val putColorsTimeEnd = System.nanoTime
 
         println("printing object to file...")
-        val fileTimeStart = System.nanoTime()
+        val fileTimeStart = System.nanoTime
         writeImageToFile(image, getFile)
-        val fileTimeEnd = System.nanoTime()
+        val fileTimeEnd = System.nanoTime
 
         println("Art generation completed!")
         println()
@@ -126,7 +126,7 @@ object Generator {
             val tempAdd = mutable.Map[Pixel, PixelColor]()
             val tempRem = mutable.Map[Pixel, PixelColor]()
 
-            val time1 = System.nanoTime()
+            val time1 = System.nanoTime
 
             // set their color based on parent
             progress.foreach(
@@ -165,7 +165,7 @@ object Generator {
             progress ++= tempAdd
             empty --= tempAdd.keys
 
-            val time2 = System.nanoTime()
+            val time2 = System.nanoTime
 
             if (count % 10 == 0) {
                 println(f"Round $count%6d: " +
