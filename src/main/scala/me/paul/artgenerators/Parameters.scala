@@ -7,7 +7,7 @@ object Parameters {
     val Width = 1600
     val Height = 800
 
-    val Filename = "alpha"
+    val Filename = "expir-test"
     val Filepath = "./data/"
     val FileFormat = "png"
 
@@ -18,5 +18,10 @@ object Parameters {
     val HueBounds: (Double, Double) = (0.0, 360.0)
     val SaturationBounds: (Double, Double) = (0.8, 1.0)
     val BrightnessBounds: (Double, Double) = (0.9, 1.0)
+
+    val NorthSpreadChance = 0.5
+    val EastSpreadChance = 0.5
+    val SouthSpreadChance = 0.5
+    val WestSpreadChance = 0.5
 
 }

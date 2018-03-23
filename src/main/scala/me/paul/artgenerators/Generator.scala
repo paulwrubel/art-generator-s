@@ -15,7 +15,7 @@ import scala.util.Random
 
 object Generator {
 
-    // TODO Comment explainations
+    // TODO Comment explanations
 
     def main(args: Array[String]): Unit = {
 
@@ -69,29 +69,28 @@ object Generator {
 
     }
 
-    private def getPixels: mutable.Map[Pixel, PixelData] = {
+    private def getPixels: mutable.Map[Pixel, PixelColor] = {
 
         println("    ...Getting pixel map...")
-        val empty: mutable.Map[Pixel, PixelData] = mutable.Map(
+        val empty: mutable.Map[Pixel, PixelColor] = mutable.Map(
                 (for (
                     x <- 0 until Parameters.Width;
                     y <- 0 until Parameters.Height
-                ) yield Pixel(x, y) -> PixelData()): _*)
-        val filled = mutable.Map[Pixel, PixelData]()
-        val progress = mutable.Map[Pixel, PixelData]()
+                ) yield Pixel(x, y) -> PixelColor()): _*)
+        val filled = mutable.Map[Pixel, PixelColor]()
+        val progress = mutable.Map[Pixel, PixelColor]()
 
         println("    ...Setting seeds...")
         val seed = Pixel(Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
-        val seedData = PixelData(Some(Color.hsb(randomBounds(Parameters.HueBounds), randomBounds(Parameters.SaturationBounds), randomBounds(Parameters.BrightnessBounds))))
+        val seedData = PixelColor(Some(Color.hsb(
+            randomBounds(Parameters.HueBounds),
+            randomBounds(Parameters.SaturationBounds),
+            randomBounds(Parameters.BrightnessBounds)
+        )))
 
         // create seed
-        filled(seed) = seedData
+        progress(seed) = seedData
         empty -= seed
-
-        // set neighboring pixels parents as seed and mark as changing
-        val neighbors = getNeighbors(mutable.Map(seed -> seedData), empty)
-        progress ++= neighbors
-        empty --= neighbors.keys
 
         var count = 0
 
@@ -101,24 +100,63 @@ object Generator {
 
             val time1 = System.nanoTime()
 
-            // set their color based on parent
-            progress.transform((_,d) => {
-                // get is guaranteed to succeed here
-                PixelData(Some(getVariedColor(filled(d.parent.get).color.get)))
-            })
+            val tempAdd = mutable.Map[Pixel, PixelColor]()
+            val tempRem = mutable.Map[Pixel, PixelColor]()
 
-            // get their neighbors
-            val neighbors = getNeighbors(progress, empty)
+            // set their color based on parent
+            progress.foreach(
+                p => {
+                    var completed = true
+
+                    val northPixel = Pixel(p._1.x, p._1.y - 1)
+                    if (empty.contains(northPixel)) {
+                        if (randomUpTo(1) < Parameters.NorthSpreadChance) {
+                            tempAdd += northPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
+                        } else {
+                            completed = false
+                        }
+                    }
+
+                    val eastPixel = Pixel(p._1.x + 1, p._1.y)
+                    if (empty.contains(eastPixel)) {
+                        if (randomUpTo(1) < Parameters.EastSpreadChance) {
+                            tempAdd += eastPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
+                        } else {
+                            completed = false
+                        }
+                    }
+
+                    val southPixel = Pixel(p._1.x, p._1.y + 1)
+                    if (empty.contains(southPixel)) {
+                        if (randomUpTo(1) < Parameters.SouthSpreadChance) {
+                            tempAdd += southPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
+                        } else {
+                            completed = false
+                        }
+                    }
+
+                    val westPixel = Pixel(p._1.x - 1, p._1.y)
+                    if (empty.contains(westPixel)) {
+                        if (randomUpTo(1) < Parameters.WestSpreadChance) {
+                            tempAdd += westPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
+                        } else {
+                            completed = false
+                        }
+                    }
+
+                    if (completed) {
+                        tempRem += p
+                    }
+                }
+            )
+
+            filled ++= tempRem
+            progress --= tempRem.keys
+
+            progress ++= tempAdd
+            empty --= tempAdd.keys
 
             val time2 = System.nanoTime()
-
-            // move pixels to completed
-            filled ++= progress
-            progress.clear()
-
-            // move neighbors to progress
-            progress ++= neighbors
-            empty --= neighbors.keys
 
             if (count % 10 == 0) {
                 println(f"Round $count%6d: " +
@@ -133,7 +171,7 @@ object Generator {
         filled
     }
 
-    def putColors(image: WritableImage, pixels: mutable.Map[Pixel, PixelData]): Unit = {
+    def putColors(image: WritableImage, pixels: mutable.Map[Pixel, PixelColor]): Unit = {
 
         // write colors from map into image file
         pixels.foreach(p => {
@@ -191,23 +229,6 @@ object Generator {
         val newSat = getNewValue(color.getSaturation, Parameters.SaturationVariation, Parameters.SaturationBounds, circular = false)
         val newBright = getNewValue(color.getBrightness, Parameters.BrightnessVariation, Parameters.BrightnessBounds, circular = false)
         Color.hsb(newHue, newSat, newBright)
-    }
-
-    def getNeighbors(parents: mutable.Map[Pixel, PixelData], empty: mutable.Map[Pixel, PixelData]
-                    ): mutable.Map[Pixel, PixelData] = {
-
-        val neighbors = mutable.Map[Pixel, PixelData]()
-
-        parents.foreach(
-            p => {
-                neighbors += Pixel(p._1.x + 1, p._1.y    ) -> PixelData(parent = Some(p._1))
-                neighbors += Pixel(p._1.x    , p._1.y + 1) -> PixelData(parent = Some(p._1))
-                neighbors += Pixel(p._1.x - 1, p._1.y    ) -> PixelData(parent = Some(p._1))
-                neighbors += Pixel(p._1.x    , p._1.y - 1) -> PixelData(parent = Some(p._1))
-            }
-        )
-
-        neighbors.filter(p => empty.contains(p._1))
     }
 
     def getImage: WritableImage = new WritableImage(Parameters.Width, Parameters.Height)
