@@ -46,13 +46,8 @@ object Generator {
 
         println("Beginning generation...")
         val fillTimeStart = System.nanoTime
-        val pixels = getPixelColors
+        getPixelColors(image)
         val fillTimeEnd = System.nanoTime
-
-        println("Putting colors on art...")
-        val putColorsTimeStart = System.nanoTime
-        putColors(image, pixels)
-        val putColorsTimeEnd = System.nanoTime
 
         println("printing object to file...")
         val fileTimeStart = System.nanoTime
@@ -65,13 +60,11 @@ object Generator {
         if (Parameters.Debug) {
             val imageTime = imageTimeEnd - imageTimeStart
             val fillTime = fillTimeEnd - fillTimeStart
-            val putColorsTime = putColorsTimeEnd - putColorsTimeStart
             val fileTime = fileTimeEnd - fileTimeStart
 
-            val imagePercentage = imageTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
-            val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
-            val putColorsPercentage = putColorsTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
-            val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + putColorsTime + fileTime) * 100
+            val imagePercentage = imageTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+            val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime+ fileTime) * 100
+            val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
 
             println("--- DEBUG INFO: ---")
             println()
@@ -80,7 +73,6 @@ object Generator {
             println()
             println(f"Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
             println(f"Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
-            println(f"Time to put colors on image:     $putColorsTime%,16dns (${putColorsTime / 1000000f}%,11.2fms) - [$putColorsPercentage%6.2f%% of total time]")
             println(f"Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]")
             println()
         }
@@ -94,37 +86,56 @@ object Generator {
       * @return a [[mutable.Map]] with final mapping from each [[Pixel]] to its final [[PixelColor]]
       */
 
-    private def getPixelColors: mutable.Map[Pixel, PixelColor] = {
+    private def getPixelColors(image: WritableImage): Unit = {
+
+        val read = image.getPixelReader
+        val write = image.getPixelWriter
 
         println("    ...Getting pixel map...")
-        val empty: mutable.Map[Pixel, PixelColor] = mutable.Map(
-                (for (
-                    x <- 0 until Parameters.Width;
-                    y <- 0 until Parameters.Height
-                ) yield Pixel(x, y) -> PixelColor()): _*)
-        val filled = mutable.Map[Pixel, PixelColor]()
-        val progress = mutable.Map[Pixel, PixelColor]()
-
+        val progress: mutable.Set[(Int, Int)] = mutable.Set()
         println("    ...Setting seeds...")
-        val seed = Pixel(Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
-        val seedData = PixelColor(Some(Color.hsb(
+        val seed = (Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
+        val seedColor = Color.hsb(
             randomBounds(Parameters.HueBounds),
             randomBounds(Parameters.SaturationBounds),
             randomBounds(Parameters.BrightnessBounds)
-        )))
+        )
 
         // create seed
-        progress(seed) = seedData
-        empty -= seed
+        write.setColor(seed._1, seed._2, seedColor)
+
+        var completed = true
+
+        def handlePixel(newPixel: (Int, Int), sc: Double): Unit = {
+            if (!read.getColor(newPixel._1, newPixel._2).isOpaque) {
+                if (randomUpTo(1) < sc) {
+                    write.setColor(newPixel._1, newPixel._2, getVariedColor( read.getColor(seed._1, seed._2) ))
+                    progress += newPixel
+                } else {
+                    completed = false
+                }
+            }
+        }
+
+        val northPixel = (seed._1    , seed._1 - 1)
+        val eastPixel  = (seed._1 + 1, seed._1    )
+        val southPixel = (seed._1    , seed._1 + 1)
+        val westPixel  = (seed._1 - 1, seed._1    )
+
+        handlePixel(northPixel, Parameters.NorthSpreadChance)
+        handlePixel(eastPixel, Parameters.EastSpreadChance)
+        handlePixel(southPixel, Parameters.SouthSpreadChance)
+        handlePixel(westPixel, Parameters.WestSpreadChance)
+
+        if (completed) {
+            progress -= seed
+        }
 
         var count = 0
 
         // while image is not filled
         println("    ...Starting rounds of generations...")
-        whileLoop(empty.nonEmpty) {
-
-            val tempAdd = mutable.Map[Pixel, PixelColor]()
-            val tempRem = mutable.Map[Pixel, PixelColor]()
+        whileLoop(progress.nonEmpty) {
 
             val time1 = System.nanoTime
 
@@ -133,20 +144,21 @@ object Generator {
                 p => {
                     var completed = true
 
-                    def handlePixel(newPixel: Pixel, sc: Double): Unit = {
-                        if (empty.contains(newPixel)) {
+                    def handlePixel(newPixel: (Int, Int), sc: Double): Unit = {
+                        if (!read.getColor(newPixel._1, newPixel._2).isOpaque) {
                             if (randomUpTo(1) < sc) {
-                                tempAdd += newPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
+                                write.setColor(newPixel._1, newPixel._2, getVariedColor( read.getColor(p._1, p._2) ))
+                                progress += newPixel
                             } else {
                                 completed = false
                             }
                         }
                     }
 
-                    val northPixel = Pixel(p._1.x    , p._1.y - 1)
-                    val eastPixel =  Pixel(p._1.x + 1, p._1.y    )
-                    val southPixel = Pixel(p._1.x    , p._1.y + 1)
-                    val westPixel =  Pixel(p._1.x - 1, p._1.y    )
+                    val northPixel = (p._1    , p._1 - 1)
+                    val eastPixel  = (p._1 + 1, p._1    )
+                    val southPixel = (p._1    , p._1 + 1)
+                    val westPixel  = (p._1 - 1, p._1    )
 
                     handlePixel(northPixel, Parameters.NorthSpreadChance)
                     handlePixel(eastPixel, Parameters.EastSpreadChance)
@@ -154,30 +166,22 @@ object Generator {
                     handlePixel(westPixel, Parameters.WestSpreadChance)
 
                     if (completed) {
-                        tempRem += p
+                        progress += p
                     }
                 }
             )
-
-            filled ++= tempRem
-            progress --= tempRem.keys
-
-            progress ++= tempAdd
-            empty --= tempAdd.keys
 
             val time2 = System.nanoTime
 
             if (count % 10 == 0) {
                 println(f"Round $count%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
-                        f"Pixels Completed: ${filled.size}%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
-                        f"[${100 * filled.size.asInstanceOf[Double] / (Parameters.Width * Parameters.Height)}%6.2f%%]")
+                        f"Pixels Completed: ??? / ${Parameters.Width * Parameters.Height}%,13d " +
+                        f"[???%%]")
             }
             count += 1
 
         }
-
-        filled
     }
 
     /** Writes to a [[WritableImage]] colors corresponding to entries in a [[mutable.Map]]
