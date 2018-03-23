@@ -46,7 +46,7 @@ object Generator {
 
         println("Beginning generation...")
         val fillTimeStart = System.nanoTime
-        getPixelColors(image)
+        fillImage(image)
         val fillTimeEnd = System.nanoTime
 
         println("printing object to file...")
@@ -86,7 +86,7 @@ object Generator {
       * @return a [[mutable.Map]] with final mapping from each [[Pixel]] to its final [[PixelColor]]
       */
 
-    private def getPixelColors(image: WritableImage): Unit = {
+    private def fillImage(image: WritableImage): Unit = {
 
         val read = image.getPixelReader
         val write = image.getPixelWriter
@@ -105,27 +105,24 @@ object Generator {
         write.setColor(seed._1, seed._2, seedColor)
 
         var completed = true
+        var pixelCount = 1
 
         def handlePixel(newPixel: (Int, Int), sc: Double): Unit = {
             if (!read.getColor(newPixel._1, newPixel._2).isOpaque) {
                 if (randomUpTo(1) < sc) {
                     write.setColor(newPixel._1, newPixel._2, getVariedColor( read.getColor(seed._1, seed._2) ))
                     progress += newPixel
+                    pixelCount += 1
                 } else {
                     completed = false
                 }
             }
         }
 
-        val northPixel = (seed._1    , seed._1 - 1)
-        val eastPixel  = (seed._1 + 1, seed._1    )
-        val southPixel = (seed._1    , seed._1 + 1)
-        val westPixel  = (seed._1 - 1, seed._1    )
-
-        handlePixel(northPixel, Parameters.NorthSpreadChance)
-        handlePixel(eastPixel, Parameters.EastSpreadChance)
-        handlePixel(southPixel, Parameters.SouthSpreadChance)
-        handlePixel(westPixel, Parameters.WestSpreadChance)
+        if (seed._2 != 0)                     handlePixel((seed._1    , seed._1 - 1), Parameters.NorthSpreadChance)
+        if (seed._1 != Parameters.Width - 1)  handlePixel((seed._1 + 1, seed._1    ), Parameters.EastSpreadChance)
+        if (seed._2 != Parameters.Height - 1) handlePixel((seed._1    , seed._1 + 1), Parameters.SouthSpreadChance)
+        if (seed._1 != 0)                     handlePixel((seed._1 - 1, seed._1    ), Parameters.WestSpreadChance)
 
         if (completed) {
             progress -= seed
@@ -149,24 +146,20 @@ object Generator {
                             if (randomUpTo(1) < sc) {
                                 write.setColor(newPixel._1, newPixel._2, getVariedColor( read.getColor(p._1, p._2) ))
                                 progress += newPixel
+                                pixelCount += 1
                             } else {
                                 completed = false
                             }
                         }
                     }
 
-                    val northPixel = (p._1    , p._1 - 1)
-                    val eastPixel  = (p._1 + 1, p._1    )
-                    val southPixel = (p._1    , p._1 + 1)
-                    val westPixel  = (p._1 - 1, p._1    )
-
-                    handlePixel(northPixel, Parameters.NorthSpreadChance)
-                    handlePixel(eastPixel, Parameters.EastSpreadChance)
-                    handlePixel(southPixel, Parameters.SouthSpreadChance)
-                    handlePixel(westPixel, Parameters.WestSpreadChance)
+                    if (p._2 != 0)                     handlePixel((p._1    , p._2 - 1), Parameters.NorthSpreadChance)
+                    if (p._1 != Parameters.Width - 1)  handlePixel((p._1 + 1, p._2    ), Parameters.EastSpreadChance)
+                    if (p._2 != Parameters.Height - 1) handlePixel((p._1    , p._2 + 1), Parameters.SouthSpreadChance)
+                    if (p._1 != 0)                     handlePixel((p._1 - 1, p._2    ), Parameters.WestSpreadChance)
 
                     if (completed) {
-                        progress += p
+                        progress -= p
                     }
                 }
             )
@@ -176,8 +169,8 @@ object Generator {
             if (count % 10 == 0) {
                 println(f"Round $count%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
-                        f"Pixels Completed: ??? / ${Parameters.Width * Parameters.Height}%,13d " +
-                        f"[???%%]")
+                        f"Pixels Completed: $pixelCount%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
+                        f"[${100 * pixelCount.asInstanceOf[Double] / (Parameters.Width * Parameters.Height)}%6.2f%%]")
             }
             count += 1
 
