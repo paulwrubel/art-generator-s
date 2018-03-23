@@ -1,7 +1,7 @@
 package me.paul.artgenerators
 
 import java.awt.Desktop
-import java.io.IOException
+import java.io.{File, IOException}
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.image.WritableImage
 import javafx.scene.paint.Color
@@ -11,35 +11,53 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
-// TODO scaladoc
+// TODO more detailed scaladoc
+/** Main engine for art generation
+  *
+  * Creates generated artwork using scala, java, and [[javafx]] libraries.
+  *
+  * Creation is done procedurally, starting with one or more seeds.
+  * Colors are varied from the seed until the image is completed
+  *
+  * Implemented using [[WritableImage]], [[Color]] for data storage,
+  * abstracted through the [[Pixel]] and [[PixelColor]] case classes.
+  *
+  * data is also stored is several instances of [[mutable.Map]]
+  *
+  */
 
 object Generator {
 
-    // TODO Comment explainations
+    // TODO Comment explanations
+
+    /** entry point for Generator object
+      *
+      * @param args the arguments passed to this object
+      */
 
     def main(args: Array[String]): Unit = {
 
         println("Starting art generation...")
 
         println("Getting image object...")
-        val imageTimeStart = System.nanoTime()
+        val imageTimeStart = System.nanoTime
         val image = getImage
-        val imageTimeEnd = System.nanoTime()
+        val imageTimeEnd = System.nanoTime
 
         println("Beginning generation...")
-        val fillTimeStart = System.nanoTime()
-        val pixels = getPixels
-        val fillTimeEnd = System.nanoTime()
+        val fillTimeStart = System.nanoTime
+        val pixels = getPixelColors
+        val fillTimeEnd = System.nanoTime
 
         println("Putting colors on art...")
-        val putColorsTimeStart = System.nanoTime()
+        val putColorsTimeStart = System.nanoTime
         putColors(image, pixels)
-        val putColorsTimeEnd = System.nanoTime()
+        val putColorsTimeEnd = System.nanoTime
 
         println("printing object to file...")
-        val fileTimeStart = System.nanoTime()
-        writeColors(image)
-        val fileTimeEnd = System.nanoTime()
+        val fileTimeStart = System.nanoTime
+        writeImageToFile(image, getFile)
+        val fileTimeEnd = System.nanoTime
 
         println("Art generation completed!")
         println()
@@ -69,29 +87,35 @@ object Generator {
 
     }
 
-    private def getPixels: mutable.Map[Pixel, PixelData] = {
+    /** Returns a [[mutable.Map]] containing a map from a [[Pixel]] to a [[PixelColor]]
+      *
+      * It is used to attach final colors to the [[WritableImage]]
+      *
+      * @return a [[mutable.Map]] with final mapping from each [[Pixel]] to its final [[PixelColor]]
+      */
+
+    private def getPixelColors: mutable.Map[Pixel, PixelColor] = {
 
         println("    ...Getting pixel map...")
-        val empty: mutable.Map[Pixel, PixelData] = mutable.Map(
+        val empty: mutable.Map[Pixel, PixelColor] = mutable.Map(
                 (for (
                     x <- 0 until Parameters.Width;
                     y <- 0 until Parameters.Height
-                ) yield Pixel(x, y) -> PixelData()): _*)
-        val filled = mutable.Map[Pixel, PixelData]()
-        val progress = mutable.Map[Pixel, PixelData]()
+                ) yield Pixel(x, y) -> PixelColor()): _*)
+        val filled = mutable.Map[Pixel, PixelColor]()
+        val progress = mutable.Map[Pixel, PixelColor]()
 
         println("    ...Setting seeds...")
         val seed = Pixel(Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
-        val seedData = PixelData(Some(Color.hsb(randomBounds(Parameters.HueBounds), randomBounds(Parameters.SaturationBounds), randomBounds(Parameters.BrightnessBounds))))
+        val seedData = PixelColor(Some(Color.hsb(
+            randomBounds(Parameters.HueBounds),
+            randomBounds(Parameters.SaturationBounds),
+            randomBounds(Parameters.BrightnessBounds)
+        )))
 
         // create seed
-        filled(seed) = seedData
+        progress(seed) = seedData
         empty -= seed
-
-        // set neighboring pixels parents as seed and mark as changing
-        val neighbors = getNeighbors(mutable.Map(seed -> seedData), empty)
-        progress ++= neighbors
-        empty --= neighbors.keys
 
         var count = 0
 
@@ -99,26 +123,49 @@ object Generator {
         println("    ...Starting rounds of generations...")
         whileLoop(empty.nonEmpty) {
 
-            val time1 = System.nanoTime()
+            val tempAdd = mutable.Map[Pixel, PixelColor]()
+            val tempRem = mutable.Map[Pixel, PixelColor]()
+
+            val time1 = System.nanoTime
 
             // set their color based on parent
-            progress.transform((_,d) => {
-                // get is guaranteed to succeed here
-                PixelData(Some(getVariedColor(filled(d.parent.get).color.get)))
-            })
+            progress.foreach(
+                p => {
+                    var completed = true
 
-            // get their neighbors
-            val neighbors = getNeighbors(progress, empty)
+                    def handlePixel(newPixel: Pixel, sc: Double): Unit = {
+                        if (empty.contains(newPixel)) {
+                            if (randomUpTo(1) < sc) {
+                                tempAdd += newPixel -> PixelColor(Some(getVariedColor(p._2.color.get)))
+                            } else {
+                                completed = false
+                            }
+                        }
+                    }
 
-            val time2 = System.nanoTime()
+                    val northPixel = Pixel(p._1.x    , p._1.y - 1)
+                    val eastPixel =  Pixel(p._1.x + 1, p._1.y    )
+                    val southPixel = Pixel(p._1.x    , p._1.y + 1)
+                    val westPixel =  Pixel(p._1.x - 1, p._1.y    )
 
-            // move pixels to completed
-            filled ++= progress
-            progress.clear()
+                    handlePixel(northPixel, Parameters.NorthSpreadChance)
+                    handlePixel(eastPixel, Parameters.EastSpreadChance)
+                    handlePixel(southPixel, Parameters.SouthSpreadChance)
+                    handlePixel(westPixel, Parameters.WestSpreadChance)
 
-            // move neighbors to progress
-            progress ++= neighbors
-            empty --= neighbors.keys
+                    if (completed) {
+                        tempRem += p
+                    }
+                }
+            )
+
+            filled ++= tempRem
+            progress --= tempRem.keys
+
+            progress ++= tempAdd
+            empty --= tempAdd.keys
+
+            val time2 = System.nanoTime
 
             if (count % 10 == 0) {
                 println(f"Round $count%6d: " +
@@ -133,7 +180,13 @@ object Generator {
         filled
     }
 
-    def putColors(image: WritableImage, pixels: mutable.Map[Pixel, PixelData]): Unit = {
+    /** Writes to a [[WritableImage]] colors corresponding to entries in a [[mutable.Map]]
+      *
+      * @param image the [[WritableImage]] to write to
+      * @param pixels a [[mutable.Map]] mapping a [[Pixel]] to its [[PixelColor]]
+      */
+
+    def putColors(image: WritableImage, pixels: mutable.Map[Pixel, PixelColor]): Unit = {
 
         // write colors from map into image file
         pixels.foreach(p => {
@@ -143,21 +196,35 @@ object Generator {
 
     }
 
-    def writeColors(image: WritableImage): Unit = {
-
-        try {
-            var count = 0
-            val exists = (f: java.io.File) => f.exists()
-            val imageFile = doWhileYield[java.io.File](exists) {
-                count += 1
-                new java.io.File(Parameters.Filepath + Parameters.Filename + "_" + count + "." + Parameters.FileFormat)
-            }
-            ImageIO.write(SwingFXUtils.fromFXImage(image, null), Parameters.FileFormat, imageFile)
-            Desktop.getDesktop.open(imageFile)
-        } catch {
-            case ioe: IOException =>
-                ioe.printStackTrace()
+    def getFile: File = {
+        val dir = new File(Parameters.Filepath)
+        if ( !dir.exists && !dir.mkdirs() ) {
+            throw new IOException("[ERROR]: COULD NOT CREATE NECESSARY DIRECTORIES")
         }
+
+        var count = 0
+        val exists = (f: File) => f.exists()
+        doWhileYield[File](exists) {
+            count += 1
+            new File(Parameters.Filepath + Parameters.Filename + "_" + count + "." + Parameters.FileFormat)
+        }
+    }
+
+    /** Writes a [[WritableImage]] to a [[File]]
+      *
+      * @param image the [[WritableImage]] to read write to a [[File]]
+      * @param file the [[File]] to write the [[WritableImage]] to
+      */
+
+    def writeImageToFile(image: WritableImage, file: File): Unit = {
+
+//        try {
+            ImageIO.write(SwingFXUtils.fromFXImage(image, null), Parameters.FileFormat, file)
+            Desktop.getDesktop.open(file)
+//        } catch {
+//            case ioe: IOException =>
+//                ioe.printStackTrace()
+//        }
 
     }
 
@@ -191,23 +258,6 @@ object Generator {
         val newSat = getNewValue(color.getSaturation, Parameters.SaturationVariation, Parameters.SaturationBounds, circular = false)
         val newBright = getNewValue(color.getBrightness, Parameters.BrightnessVariation, Parameters.BrightnessBounds, circular = false)
         Color.hsb(newHue, newSat, newBright)
-    }
-
-    def getNeighbors(parents: mutable.Map[Pixel, PixelData], empty: mutable.Map[Pixel, PixelData]
-                    ): mutable.Map[Pixel, PixelData] = {
-
-        val neighbors = mutable.Map[Pixel, PixelData]()
-
-        parents.foreach(
-            p => {
-                neighbors += Pixel(p._1.x + 1, p._1.y    ) -> PixelData(parent = Some(p._1))
-                neighbors += Pixel(p._1.x    , p._1.y + 1) -> PixelData(parent = Some(p._1))
-                neighbors += Pixel(p._1.x - 1, p._1.y    ) -> PixelData(parent = Some(p._1))
-                neighbors += Pixel(p._1.x    , p._1.y - 1) -> PixelData(parent = Some(p._1))
-            }
-        )
-
-        neighbors.filter(p => empty.contains(p._1))
     }
 
     def getImage: WritableImage = new WritableImage(Parameters.Width, Parameters.Height)
