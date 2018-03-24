@@ -3,15 +3,23 @@ package me.paul.artgenerators
 object Parameters {
 
     val Debug = true
+    val Version = "v0.2-alpha"
 
+    val ImageCount = 5
+    val OpenFile = true
+
+    // HD       : 1280 x 720
+    // Full HD  : 1920 × 1080
+    // True 4K  : 4096 × 2160
+    // True 8K  : 8192 × 4320
     val Width = 1920
     val Height = 1080
 
-    val Filename = "beta"
-    val Filepath = "./out/images/beta/1080p/"
+    val Filename = f"$Version-${Width}x$Height"
+    val Filepath = f"./out/images/$Version/${Width}x$Height/"
     val FileFormat = "png"
 
-    val HueVariation = 3.0
+    val HueVariation = 1.0
     val SaturationVariation = 0.02
     val BrightnessVariation = 0.02
 

@@ -19,8 +19,7 @@ import scala.util.Random
   * Creation is done procedurally, starting with one or more seeds.
   * Colors are varied from the seed until the image is completed
   *
-  * Implemented using [[WritableImage]], [[Color]] for data storage,
-  * abstracted through the [[Pixel]] and [[PixelColor]] case classes.
+  * Implemented using [[WritableImage]], [[Color]] for data storage
   *
   * data is also stored is several instances of [[mutable.Map]]
   *
@@ -37,63 +36,79 @@ object Generator {
 
     def main(args: Array[String]): Unit = {
 
-        println("Starting art generation...")
-
-        println("Getting image object...")
-        val imageTimeStart = System.nanoTime
-        val image = getImage
-        val imageTimeEnd = System.nanoTime
-
-        println("Beginning generation...")
-        val fillTimeStart = System.nanoTime
-        fillImage(image)
-        val fillTimeEnd = System.nanoTime
-
-        println("printing object to file...")
-        val fileTimeStart = System.nanoTime
-        writeImageToFile(image, getFile)
-        val fileTimeEnd = System.nanoTime
-
-        println("Art generation completed!")
         println()
+        println("Starting program...")
 
-        if (Parameters.Debug) {
-            val imageTime = imageTimeEnd - imageTimeStart
-            val fillTime = fillTimeEnd - fillTimeStart
-            val fileTime = fileTimeEnd - fileTimeStart
+        (1 to Parameters.ImageCount).foreach((imageNum) => {
 
-            val imagePercentage = imageTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
-            val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime+ fileTime) * 100
-            val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+            println(f"[Image #$imageNum%4d] Starting art generation...")
 
-            println("--- DEBUG INFO: ---")
+            println(f"[Image #$imageNum%4d] Getting image object...")
+            val imageTimeStart = System.nanoTime
+            val image = getImage
+            val imageTimeEnd = System.nanoTime
+
+            println(f"[Image #$imageNum%4d] Beginning generation...")
+            val fillTimeStart = System.nanoTime
+            fillImage(image, imageNum)
+            val fillTimeEnd = System.nanoTime
+
+            println(f"[Image #$imageNum%4d] printing object to file...")
+            val fileTimeStart = System.nanoTime
+            val file = getFile
+            writeImageToFile(image, file)
+            val fileTimeEnd = System.nanoTime
+
+            println(f"[Image #$imageNum%4d] Art generation completed!")
             println()
-            println(f"Image Size: ${Parameters.Width} x ${Parameters.Height}")
-            println(f"Total pixel count: ${Parameters.Width * Parameters.Height}")
-            println()
-            println(f"Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
-            println(f"Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
-            println(f"Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]")
-            println()
-        }
+
+            if (Parameters.OpenFile) openFile(file)
+
+            if (Parameters.Debug) {
+                val imageTime = imageTimeEnd - imageTimeStart
+                val fillTime = fillTimeEnd - fillTimeStart
+                val fileTime = fileTimeEnd - fileTimeStart
+
+                val imagePercentage = imageTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+                val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+                val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+
+                println(f"[Image #$imageNum%4d] --- START DEBUG INFO ---")
+                println(f"[Image #$imageNum%4d]")
+                println(f"[Image #$imageNum%4d] Image Size: ${Parameters.Width} x ${Parameters.Height}")
+                println(f"[Image #$imageNum%4d] Total pixel count: ${Parameters.Width * Parameters.Height}")
+                println(f"[Image #$imageNum%4d]")
+                println(f"[Image #$imageNum%4d] Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
+                println(f"[Image #$imageNum%4d] Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
+                println(f"[Image #$imageNum%4d] Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]")
+                println(f"[Image #$imageNum%4d]")
+                println(f"[Image #$imageNum%4d] --- END DEBUG INFO ---")
+                println(f"[Image #$imageNum%4d]")
+            }
+
+        })
+
+        println()
+        println("All images successfully printed!")
+        println()
 
     }
 
-    /** Returns a [[mutable.Map]] containing a map from a [[Pixel]] to a [[PixelColor]]
+    /** Returns a [[mutable.Map]] containing a map from a
       *
       * It is used to attach final colors to the [[WritableImage]]
       *
-      * @return a [[mutable.Map]] with final mapping from each [[Pixel]] to its final [[PixelColor]]
+      * @return a [[mutable.Map]] with final mapping from each
       */
 
-    private def fillImage(image: WritableImage): Unit = {
+    private def fillImage(image: WritableImage, imageNum: Int): Unit = {
 
         val read = image.getPixelReader
         val write = image.getPixelWriter
 
-        println("    ...Getting pixel map...")
+        println(f"[Image #$imageNum%4d]     ...Getting pixel map...")
         val progress: mutable.Set[(Int, Int)] = mutable.Set()
-        println("    ...Setting seeds...")
+        println(f"[Image #$imageNum%4d]     ...Setting seeds...")
         val seed = (Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
         val seedColor = Color.hsb(
             randomBounds(Parameters.HueBounds),
@@ -110,7 +125,7 @@ object Generator {
         var pixelCount = 1
 
         // while image is not filled
-        println("    ...Starting rounds of generations...")
+        println(f"[Image #$imageNum%4d]     ...Starting rounds of generations...")
         whileLoop(progress.nonEmpty) {
 
             val time1 = System.nanoTime
@@ -146,8 +161,7 @@ object Generator {
             val time2 = System.nanoTime
 
             if (count % 10 == 0) {
-                println(f"${progress.size}      " +
-                        f"Round $count%6d: " +
+                println(f"[Image #$imageNum%4d]     Round $count%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
                         f"Pixels Completed: $pixelCount%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
                         f"[${100 * pixelCount.asInstanceOf[Double] / (Parameters.Width * Parameters.Height)}%6.2f%%]")
@@ -155,22 +169,6 @@ object Generator {
             count += 1
 
         }
-    }
-
-    /** Writes to a [[WritableImage]] colors corresponding to entries in a [[mutable.Map]]
-      *
-      * @param image the [[WritableImage]] to write to
-      * @param pixels a [[mutable.Map]] mapping a [[Pixel]] to its [[PixelColor]]
-      */
-
-    def putColors(image: WritableImage, pixels: mutable.Map[Pixel, PixelColor]): Unit = {
-
-        // write colors from map into image file
-        pixels.foreach(p => {
-            // get is guaranteed to succeed here
-            image.getPixelWriter.setColor(p._1.x, p._1.y, p._2.color.get)
-        })
-
     }
 
     def getFile: File = {
@@ -195,15 +193,16 @@ object Generator {
 
     def writeImageToFile(image: WritableImage, file: File): Unit = {
 
-//        try {
+        try {
             ImageIO.write(SwingFXUtils.fromFXImage(image, null), Parameters.FileFormat, file)
-            Desktop.getDesktop.open(file)
-//        } catch {
-//            case ioe: IOException =>
-//                ioe.printStackTrace()
-//        }
+        } catch {
+            case ioe: IOException =>
+                ioe.printStackTrace()
+        }
 
     }
+
+    def openFile(file: File): Unit = Desktop.getDesktop.open(file)
 
     def getVariedColor(color: Color): Color = {
 
