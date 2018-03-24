@@ -138,7 +138,7 @@ object Generator {
 
         })
 
-        var count = 0
+        var round = 0
         var pixelCount = Parameters.SeedCount
 
         // while image is not filled
@@ -152,6 +152,25 @@ object Generator {
                 p => {
                     var completed = true
 
+                    def getSpreadChance(chance: Double, delta: Double) = {
+                        if (delta >= 0) {
+                            val x = (chance + (delta * round)) % 2.0
+                            if (x >= 1.0) {
+                                1 - ((chance + (round * delta)) % 1.0)
+                            } else {
+                                (chance + (round * delta)) % 1.0
+                            }
+                        } else {
+                            val x = (chance + (-delta * round)) % 2.0
+                            //println("result: " + x)
+                            if (x < 1.0) {
+                                1 - ((chance + (round * -delta)) % 1.0)
+                            } else {
+                                (chance + (round * -delta)) % 1.0
+                            }
+                        }
+                    }
+
                     def handlePixel(newPixel: (Int, Int), sc: Double): Unit = {
                         if (!read.getColor(newPixel._1, newPixel._2).isOpaque) {
                             if (randomUpTo(1) < sc) {
@@ -164,10 +183,10 @@ object Generator {
                         }
                     }
 
-                    if (p._2 != 0)                     handlePixel((p._1    , p._2 - 1), Parameters.NorthSpreadChance)
-                    if (p._1 != Parameters.Width - 1)  handlePixel((p._1 + 1, p._2    ), Parameters.EastSpreadChance)
-                    if (p._2 != Parameters.Height - 1) handlePixel((p._1    , p._2 + 1), Parameters.SouthSpreadChance)
-                    if (p._1 != 0)                     handlePixel((p._1 - 1, p._2    ), Parameters.WestSpreadChance)
+                    if (p._2 != 0)                     handlePixel((p._1    , p._2 - 1), getSpreadChance(Parameters.NorthSpreadChance, Parameters.NorthSpreadChanceDelta))
+                    if (p._1 != Parameters.Width - 1)  handlePixel((p._1 + 1, p._2    ), getSpreadChance(Parameters.EastSpreadChance, Parameters.EastSpreadChanceDelta))
+                    if (p._2 != Parameters.Height - 1) handlePixel((p._1    , p._2 + 1), getSpreadChance(Parameters.SouthSpreadChance, Parameters.SouthSpreadChanceDelta))
+                    if (p._1 != 0)                     handlePixel((p._1 - 1, p._2    ), getSpreadChance(Parameters.WestSpreadChance, Parameters.WestSpreadChanceDelta))
 
                     if (completed) {
                         progress -= p
@@ -177,13 +196,13 @@ object Generator {
 
             val time2 = System.nanoTime
 
-            if (Parameters.Debug && count % 10 == 0) {
-                println(f"[Image #$imageNum%4d]     Round $count%6d: " +
+            if (Parameters.Debug && round % 10 == 0) {
+                println(f"[Image #$imageNum%4d]     Round $round%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
                         f"Pixels Completed: $pixelCount%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
                         f"[${100 * pixelCount.asInstanceOf[Double] / (Parameters.Width * Parameters.Height)}%6.2f%%]")
             }
-            count += 1
+            round += 1
 
         }
     }
