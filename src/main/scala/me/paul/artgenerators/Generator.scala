@@ -39,58 +39,59 @@ object Generator {
         println()
         println("Starting program...")
 
-        (1 to Parameters.ImageCount).foreach((imageNum) => {
-
-            println(f"[Image #$imageNum%4d] Starting art generation...")
-
-            println(f"[Image #$imageNum%4d] Getting image object...")
-            val imageTimeStart = System.nanoTime
-            val image = getImage
-            val imageTimeEnd = System.nanoTime
-
-            println(f"[Image #$imageNum%4d] Beginning generation...")
-            val fillTimeStart = System.nanoTime
-            fillImage(image, imageNum)
-            val fillTimeEnd = System.nanoTime
-
-            println(f"[Image #$imageNum%4d] printing object to file...")
-            val fileTimeStart = System.nanoTime
-            val file = getFile
-            writeImageToFile(image, file)
-            val fileTimeEnd = System.nanoTime
-
-            println(f"[Image #$imageNum%4d] Art generation completed!")
-            println()
-
-            if (Parameters.OpenFile) openFile(file)
-
-            if (Parameters.Debug) {
-                val imageTime = imageTimeEnd - imageTimeStart
-                val fillTime = fillTimeEnd - fillTimeStart
-                val fileTime = fileTimeEnd - fileTimeStart
-
-                val imagePercentage = imageTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
-                val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
-                val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
-
-                println(f"[Image #$imageNum%4d] --- START DEBUG INFO ---")
-                println(f"[Image #$imageNum%4d]")
-                println(f"[Image #$imageNum%4d] Image Size: ${Parameters.Width} x ${Parameters.Height}")
-                println(f"[Image #$imageNum%4d] Total pixel count: ${Parameters.Width * Parameters.Height}")
-                println(f"[Image #$imageNum%4d]")
-                println(f"[Image #$imageNum%4d] Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
-                println(f"[Image #$imageNum%4d] Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
-                println(f"[Image #$imageNum%4d] Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]")
-                println(f"[Image #$imageNum%4d]")
-                println(f"[Image #$imageNum%4d] --- END DEBUG INFO ---")
-                println(f"[Image #$imageNum%4d]")
-            }
-
-        })
+        (1 to Parameters.ImageCount).foreach(generateArt)
 
         println()
         println("All images successfully printed!")
         println()
+
+    }
+
+    def generateArt(imageNum: Int): Unit = {
+
+        println(f"[Image #$imageNum%4d] Starting art generation...")
+
+        println(f"[Image #$imageNum%4d] Getting image object...")
+        val imageTimeStart = System.nanoTime
+        val image = getImage
+        val imageTimeEnd = System.nanoTime
+
+        println(f"[Image #$imageNum%4d] Beginning generation...")
+        val fillTimeStart = System.nanoTime
+        fillImage(image, imageNum)
+        val fillTimeEnd = System.nanoTime
+
+        println(f"[Image #$imageNum%4d] printing object to file...")
+        val fileTimeStart = System.nanoTime
+        val file = getFile
+        writeImageToFile(image, file)
+        val fileTimeEnd = System.nanoTime
+
+        println(f"[Image #$imageNum%4d] Art generation completed!")
+        println()
+
+        if (Parameters.OpenFile) openFile(file)
+
+        if (Parameters.Debug) {
+            val imageTime = imageTimeEnd - imageTimeStart
+            val fillTime = fillTimeEnd - fillTimeStart
+            val fileTime = fileTimeEnd - fileTimeStart
+
+            val imagePercentage = imageTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+            val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+            val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
+
+            println(f"[Image #$imageNum%4d] --- START DEBUG INFO ---")
+            println(f"[Image #$imageNum%4d]")
+            println(f"[Image #$imageNum%4d] Image Size: ${Parameters.Width} x ${Parameters.Height}")
+            println(f"[Image #$imageNum%4d] Total pixel count: ${Parameters.Width * Parameters.Height}")
+            println(f"[Image #$imageNum%4d]")
+            println(f"[Image #$imageNum%4d] Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
+            println(f"[Image #$imageNum%4d] Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
+            println(f"[Image #$imageNum%4d] Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]")
+            println(f"[Image #$imageNum%4d]")
+            println(f"[Image #$imageNum%4d] --- END DEBUG INFO ---")
+        }
 
     }
 
@@ -110,11 +111,20 @@ object Generator {
         val progress: mutable.Set[(Int, Int)] = mutable.Set()
         println(f"[Image #$imageNum%4d]     ...Setting seeds...")
         val seed = (Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
-        val seedColor = Color.hsb(
-            randomBounds(Parameters.HueBounds),
-            randomBounds(Parameters.SaturationBounds),
-            randomBounds(Parameters.BrightnessBounds)
-        )
+        val seedColor =
+            if (Parameters.HueBounds._2 < Parameters.HueBounds._1) {
+                Color.hsb(
+                    randomBetween(Parameters.HueBounds._1)(360.0 + Parameters.HueBounds._2) % 360,
+                    randomBounds(Parameters.SaturationBounds),
+                    randomBounds(Parameters.BrightnessBounds)
+                )
+            } else {
+                Color.hsb(
+                    randomBounds(Parameters.HueBounds),
+                    randomBounds(Parameters.SaturationBounds),
+                    randomBounds(Parameters.BrightnessBounds)
+                )
+            }
 
         // create seed
         write.setColor(seed._1, seed._2, seedColor)
@@ -217,7 +227,11 @@ object Generator {
             }
 
             val condition = (d: Double) => {
-                d >= bounds._1 && d <= bounds._2
+                if (circular && bounds._2 < bounds._1) {
+                    (d >= bounds._1 && d <= 360.0) || (d >= 0.0 && d <= bounds._2)
+                } else {
+                    d >= bounds._1 && d <= bounds._2
+                }
             }
 
             doUntilYield[Double](condition) {

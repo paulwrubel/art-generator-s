@@ -12,8 +12,8 @@ object Parameters {
     // Full HD  : 1920 × 1080
     // True 4K  : 4096 × 2160
     // True 8K  : 8192 × 4320
-    val Width = 1920
-    val Height = 1080
+    val Width = 500
+    val Height = 500
 
     val Filename = f"$Version-${Width}x$Height"
     val Filepath = f"./out/images/$Version/${Width}x$Height/"
@@ -23,7 +23,7 @@ object Parameters {
     val SaturationVariation = 0.02
     val BrightnessVariation = 0.02
 
-    val HueBounds: (Double, Double) = (180.0, 360.0)
+    val HueBounds: (Double, Double) = (340.0, 20.0)
     val SaturationBounds: (Double, Double) = (0.85, 1)
     val BrightnessBounds: (Double, Double) = (0.85, 1)
 
