@@ -83,8 +83,8 @@ object Generator {
 
             println(f"[Image #$imageNum%4d] --- START DEBUG INFO ---")
             println(f"[Image #$imageNum%4d]")
-            println(f"[Image #$imageNum%4d] Image Size: ${Parameters.Width} x ${Parameters.Height}")
-            println(f"[Image #$imageNum%4d] Total pixel count: ${Parameters.Width * Parameters.Height}")
+            println(f"[Image #$imageNum%4d] Image Size: ${Parameters.Width}%,d x ${Parameters.Height}%,d")
+            println(f"[Image #$imageNum%4d] Total pixel count: ${Parameters.Width * Parameters.Height}%,d")
             println(f"[Image #$imageNum%4d]")
             println(f"[Image #$imageNum%4d] Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
             println(f"[Image #$imageNum%4d] Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
@@ -107,32 +107,39 @@ object Generator {
         val read = image.getPixelReader
         val write = image.getPixelWriter
 
-        println(f"[Image #$imageNum%4d]     ...Getting pixel map...")
         val progress: mutable.Set[(Int, Int)] = mutable.Set()
         println(f"[Image #$imageNum%4d]     ...Setting seeds...")
-        val seed = (Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
-        val seedColor =
-            if (Parameters.HueBounds._2 < Parameters.HueBounds._1) {
-                Color.hsb(
-                    randomBetween(Parameters.HueBounds._1)(360.0 + Parameters.HueBounds._2) % 360,
-                    randomBounds(Parameters.SaturationBounds),
-                    randomBounds(Parameters.BrightnessBounds)
-                )
-            } else {
-                Color.hsb(
-                    randomBounds(Parameters.HueBounds),
-                    randomBounds(Parameters.SaturationBounds),
-                    randomBounds(Parameters.BrightnessBounds)
-                )
+
+        (1 to Parameters.SeedCount).foreach( _ => {
+
+            val condition = (p: (Int, Int)) => read.getColor(p._1, p._2).isOpaque
+            val seed = doWhileYield[(Int, Int)](condition) {
+                (Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
             }
+            val seedColor =
+                if (Parameters.HueBounds._2 < Parameters.HueBounds._1) {
+                    Color.hsb(
+                        randomBetween(Parameters.HueBounds._1)(360.0 + Parameters.HueBounds._2) % 360,
+                        randomBounds(Parameters.SaturationBounds),
+                        randomBounds(Parameters.BrightnessBounds)
+                    )
+                } else {
+                    Color.hsb(
+                        randomBounds(Parameters.HueBounds),
+                        randomBounds(Parameters.SaturationBounds),
+                        randomBounds(Parameters.BrightnessBounds)
+                    )
+                }
 
-        // create seed
-        write.setColor(seed._1, seed._2, seedColor)
+            // create seed
+            write.setColor(seed._1, seed._2, seedColor)
 
-        progress += seed
+            progress += seed
+
+        })
 
         var count = 0
-        var pixelCount = 1
+        var pixelCount = Parameters.SeedCount
 
         // while image is not filled
         println(f"[Image #$imageNum%4d]     ...Starting rounds of generations...")
@@ -170,7 +177,7 @@ object Generator {
 
             val time2 = System.nanoTime
 
-            if (count % 10 == 0) {
+            if (Parameters.Debug && count % 10 == 0) {
                 println(f"[Image #$imageNum%4d]     Round $count%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
                         f"Pixels Completed: $pixelCount%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
