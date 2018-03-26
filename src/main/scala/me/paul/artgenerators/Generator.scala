@@ -161,12 +161,12 @@ object Generator {
                                 (chance + (round * delta)) % 1.0
                             }
                         } else {
-                            val x = (chance + (-delta * round)) % 2.0
+                            val x = (((chance + (delta * round)) % 2.0) + 2.0) % 2.0
                             //println("result: " + x)
                             if (x < 1.0) {
-                                1 - ((chance + (round * -delta)) % 1.0)
+                                (((chance + (delta * round)) % 1.0) + 1.0) % 1.0
                             } else {
-                                (chance + (round * -delta)) % 1.0
+                                1 - ((((chance + (delta * round)) % 1.0) + 1.0) % 1.0)
                             }
                         }
                     }
