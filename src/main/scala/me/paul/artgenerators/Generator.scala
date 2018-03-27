@@ -29,17 +29,12 @@ object Generator {
 
     // TODO Comment explanations
 
-    /** entry point for Generator object
-      *
-      * @param args the arguments passed to this object
-      */
-
-    def main(args: Array[String]): Unit = {
+    def startGeneration(numOfImages: Int): Unit = {
 
         println()
         println("Starting program...")
 
-        (1 to Parameters.ImageCount).foreach(generateArt)
+        (1 to numOfImages).foreach(generateArt)
 
         println()
         println("All images successfully printed!")
