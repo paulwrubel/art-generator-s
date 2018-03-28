@@ -115,14 +115,14 @@ object Generator {
                 if (Parameters.HueBounds._2 < Parameters.HueBounds._1) {
                     Color.hsb(
                         randomBetween(Parameters.HueBounds._1)(360.0 + Parameters.HueBounds._2) % 360,
-                        randomBounds(Parameters.SaturationBounds),
-                        randomBounds(Parameters.BrightnessBounds)
+                        randomBounds(Parameters.SaturationBounds) / 100,
+                        randomBounds(Parameters.BrightnessBounds) / 100
                     )
                 } else {
                     Color.hsb(
                         randomBounds(Parameters.HueBounds),
-                        randomBounds(Parameters.SaturationBounds),
-                        randomBounds(Parameters.BrightnessBounds)
+                        randomBounds(Parameters.SaturationBounds) / 100,
+                        randomBounds(Parameters.BrightnessBounds) / 100
                     )
                 }
 
@@ -178,10 +178,10 @@ object Generator {
                         }
                     }
 
-                    if (p._2 != 0)                     handlePixel((p._1    , p._2 - 1), getSpreadChance(Parameters.NorthSpreadChance, Parameters.NorthSpreadChanceDelta))
-                    if (p._1 != Parameters.Width - 1)  handlePixel((p._1 + 1, p._2    ), getSpreadChance(Parameters.EastSpreadChance, Parameters.EastSpreadChanceDelta))
-                    if (p._2 != Parameters.Height - 1) handlePixel((p._1    , p._2 + 1), getSpreadChance(Parameters.SouthSpreadChance, Parameters.SouthSpreadChanceDelta))
-                    if (p._1 != 0)                     handlePixel((p._1 - 1, p._2    ), getSpreadChance(Parameters.WestSpreadChance, Parameters.WestSpreadChanceDelta))
+                    if (p._2 != 0)                     handlePixel((p._1    , p._2 - 1), getSpreadChance(Parameters.NorthSpreadChance / 100, Parameters.NorthSpreadChanceDelta / 10000))
+                    if (p._1 != Parameters.Width - 1)  handlePixel((p._1 + 1, p._2    ), getSpreadChance(Parameters.EastSpreadChance  / 100, Parameters.EastSpreadChanceDelta  / 10000))
+                    if (p._2 != Parameters.Height - 1) handlePixel((p._1    , p._2 + 1), getSpreadChance(Parameters.SouthSpreadChance / 100, Parameters.SouthSpreadChanceDelta / 10000))
+                    if (p._1 != 0)                     handlePixel((p._1 - 1, p._2    ), getSpreadChance(Parameters.WestSpreadChance  / 100, Parameters.WestSpreadChanceDelta  / 10000))
 
                     if (completed) {
                         progress -= p
@@ -266,8 +266,8 @@ object Generator {
 
         // get new values
         val newHue = getNewValue(color.getHue, Parameters.HueVariation, Parameters.HueBounds, circular = true)
-        val newSat = getNewValue(color.getSaturation, Parameters.SaturationVariation, Parameters.SaturationBounds, circular = false)
-        val newBright = getNewValue(color.getBrightness, Parameters.BrightnessVariation, Parameters.BrightnessBounds, circular = false)
+        val newSat = getNewValue(color.getSaturation * 100, Parameters.SaturationVariation, Parameters.SaturationBounds, circular = false) / 100
+        val newBright = getNewValue(color.getBrightness * 100, Parameters.BrightnessVariation, Parameters.BrightnessBounds, circular = false) / 100
         Color.hsb(newHue, newSat, newBright)
     }
 
