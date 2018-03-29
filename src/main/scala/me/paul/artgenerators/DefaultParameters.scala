@@ -3,7 +3,7 @@ package me.paul.artgenerators
 object DefaultParameters {
 
     val Debug: Boolean = true
-    val Version: String = "v0.4-alpha"
+    val Version: String = "v0.5-beta"
 
     val ImageCount: Int = 1
     val OpenFile: Boolean = true
