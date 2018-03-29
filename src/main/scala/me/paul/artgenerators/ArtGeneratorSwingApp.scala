@@ -1,16 +1,16 @@
 package me.paul.artgenerators
 
-import java.awt.Color
+import java.awt.{Color, Font}
 import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
-import javax.swing.{SwingWorker, UIManager, UnsupportedLookAndFeelException}
-import javax.swing.text.{AbstractDocument, AttributeSet, DocumentFilter}
+import javax.swing.{UIManager, UnsupportedLookAndFeelException}
+import javax.swing.text.{AbstractDocument, AttributeSet, DefaultCaret, DocumentFilter}
 import javax.swing.text.DocumentFilter.FilterBypass
 
 import scala.swing._
 import scala.swing.event._
 
-object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeListener {
+object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
     val DefaultColor: Color = Color.BLUE
     val ValidColor: Color   = Color.GREEN
@@ -41,9 +41,9 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
     val valueLabel = new Label("Value")
     val feedbackLabel = new Label("Feedback")
 
-    val imageWidthTextBoxLabel = new Label("Width: ")
-    val imageHeightTextBoxLabel = new Label("Height: ")
-    val imageWidthTextBox, imageHeightTextBox = new TextField {
+    val imageWidthTextFieldLabel = new Label("Width: ")
+    val imageHeightTextFieldLabel = new Label("Height: ")
+    val imageWidthTextField, imageHeightTextField = new TextField {
 
         object IntegralFilter extends DocumentFilter {
             override def insertString(fb: FilterBypass, offs: Int, str: String, a: AttributeSet): Unit = {
@@ -59,9 +59,6 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
         peer.getDocument.asInstanceOf[AbstractDocument].setDocumentFilter(IntegralFilter)
 
         text = ""
-        maximumSize = new Dimension(150, 30)
-        minimumSize = new Dimension(150, 30)
-        preferredSize = new Dimension(150, 30)
     }
 
     val imageWidthFeedbackLabel: Label = new Label {
@@ -82,18 +79,47 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
         text = "File[s] will be opened [DEFAULT]"
     }
 
+    val filenameTextFieldLabel = new Label("Filename: ")
+    val filenameTextField: TextField = new TextField {
+        text = ""
+    }
+
+    val filepathTextFieldLabel = new Label("Filepath: ")
+    val filepathTextField: TextField = new TextField {
+        text = ""
+    }
+
+    // TODO: Filename
+    // TODO: Filepath
+
+    // TODO: ImageCount
+    // TODO: SeedCount
+
+    // TODO: HueVariation
+    // TODO: SaturationVariation
+    // TODO: BrightnessVariation
+
+    // TODO: HueBounds
+    // TODO: SaturationBounds
+    // TODO: BrightnessBounds
+
     val startButtonLabel = new Label("Start Generation: ")
     val startButton = new Button("START")
 
     val output: TextArea = new TextArea {
+        rows = 10
+        columns = 100
         editable = false
+        font = new Font(Font.MONOSPACED, Font.PLAIN, 14)
+        peer.getCaret.asInstanceOf[DefaultCaret].setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE)
     }
 
-    val progressBar = new ProgressBar {
+    val progressBar: ProgressBar = new ProgressBar {
         min = 0
-        max = 100
+        //max = 100
         value = 0
         labelPainted = true
+        font = new Font(Font.MONOSPACED, Font.PLAIN, 14)
     }
 
     /* MainFrame component layout */
@@ -115,11 +141,11 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
             contents += Swing.VStrut(50)
 
             def settingsGrid: GridPanel = new GridPanel(3, 3) {
-                contents += imageWidthTextBoxLabel
-                contents += imageWidthTextBox
+                contents += imageWidthTextFieldLabel
+                contents += imageWidthTextField
                 contents += imageWidthFeedbackLabel
-                contents += imageHeightTextBoxLabel
-                contents += imageHeightTextBox
+                contents += imageHeightTextFieldLabel
+                contents += imageHeightTextField
                 contents += imageHeightFeedbackLabel
                 contents += openFileCheckBoxLabel
                 contents += openFileCheckBox
@@ -136,10 +162,13 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
             }
             contents += startRow
 
-            contents += Swing.VStrut(50)
             contents += new Separator()
 
-            contents += output
+            def outputScrollPane: ScrollPane = new ScrollPane(output)
+            contents += outputScrollPane
+
+            contents += new Separator()
+
             contents += progressBar
 
             // Other
@@ -147,7 +176,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
             border = Swing.EmptyBorder(10)
         }
 
-        size = new Dimension(800, 600)
+        size = new Dimension(1000, 600)
 
         peer.setLocationRelativeTo(null)
     }
@@ -157,8 +186,8 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
     val publishers = List(
         startButton,
         openFileCheckBox,
-        imageWidthTextBox,
-        imageHeightTextBox
+        imageWidthTextField,
+        imageHeightTextField
     )
 
     listenTo(publishers: _*)
@@ -167,8 +196,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
         case ButtonClicked(`startButton`) =>
             if (canStart) {
                 val params: Parameters = initializeParameters
-                val gen = new Generator(params, output)
-                gen.addPropertyChangeListener(this)
+                val gen = new Generator(params, output, progressBar)
                 gen.execute()
 
             } else {
@@ -182,8 +210,8 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
                 openFileFeedbackLabel.foreground = ValidColor
                 openFileFeedbackLabel.text = "File[s] will NOT be opened"
             }
-        case EditDone(`imageWidthTextBox`) =>
-            val text = imageWidthTextBox.text
+        case EditDone(`imageWidthTextField`) =>
+            val text = imageWidthTextField.text
 
             if (text.length == 0) {
                 canStart = true
@@ -205,8 +233,8 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
                     imageWidthFeedbackLabel.text = s"Using value of $value"
                 }
             }
-        case EditDone(`imageHeightTextBox`) =>
-            val text = imageHeightTextBox.text
+        case EditDone(`imageHeightTextField`) =>
+            val text = imageHeightTextField.text
 
             if (text.length == 0) {
                 canStart = true
@@ -230,16 +258,6 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
             }
     }
 
-    override def propertyChange(event: PropertyChangeEvent): Unit = {
-        println("redfish")
-        if (event.getPropertyName == "progress") {
-            val progress: Int = event.getNewValue.asInstanceOf[Int]
-            println("progress = " + progress)
-            progressBar.value = progress
-        }
-        println("bluefish")
-    }
-
     def initializeParameters: Parameters = {
 
         val p = new Parameters
@@ -251,16 +269,18 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeLi
         p.OpenFile = openFileCheckBox.selected
 
         p.Width =
-            if (imageWidthTextBox.text == "")
+            if (imageWidthTextField.text == "")
                 DefaultParameters.Width
             else
-                imageWidthTextBox.text.toInt
+                imageWidthTextField.text.toInt
 
         p.Height =
-            if (imageWidthTextBox.text == "")
+            if (imageHeightTextField.text == "")
                 DefaultParameters.Height
             else
-                imageWidthTextBox.text.toInt
+                imageHeightTextField.text.toInt
+
+        progressBar.max = p.Width * p.Height
 
         p.Filename = s"${p.Version}-${p.Width}x${p.Height}"
         p.Filepath = s"./out/images/${p.Version}/${p.Width}x${p.Height}/"

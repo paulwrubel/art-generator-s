@@ -2,6 +2,7 @@ package me.paul.artgenerators
 
 import java.awt.Desktop
 import java.io.{File, IOException}
+import java.util
 
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.image.WritableImage
@@ -11,7 +12,8 @@ import javax.swing.SwingWorker
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.swing.TextArea
+import scala.collection.JavaConverters._
+import scala.swing.{ProgressBar, TextArea}
 import scala.util.Random
 
 // TODO more detailed scaladoc
@@ -28,7 +30,7 @@ import scala.util.Random
   *
   */
 
-class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, Unit] {
+class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) extends SwingWorker[Unit, Int] {
 
     // TODO Comment explanations
 
@@ -36,39 +38,52 @@ class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, 
         startGeneration()
     }
 
+    override def process(chunks: util.List[Int]): Unit = {
+        val scalaChunks = chunks.asScala
+
+        progressBar.value = scalaChunks.last
+        progressBar.label = f"${100 * progressBar.value.asInstanceOf[Double] / progressBar.max}%6.2f%%"
+
+    }
+
+    override def done(): Unit = {
+        progressBar.value = progressBar.max
+        progressBar.label = f"${100.asInstanceOf[Double]}%6.2f%%"
+    }
+
     def startGeneration(): Unit = {
         output.text += "Starting program...\n"
 
         (1 to params.ImageCount).foreach(generateArt)
 
-        println()
-        println("All images successfully printed!")
-        println()
+        output.text += "\n"
+        output.text += "All images successfully printed!\n"
+        output.text += "\n"
 
     }
 
     def generateArt(imageNum: Int): Unit = {
 
-        println(f"[Image #$imageNum%4d] Starting art generation...")
+        output.text += f"[Image #$imageNum%4d] Starting art generation...\n"
 
-        println(f"[Image #$imageNum%4d] Getting image object...")
+        output.text += f"[Image #$imageNum%4d] Getting image object: [${params.Width} x ${params.Height}]...\n"
         val imageTimeStart = System.nanoTime
         val image = getImage
         val imageTimeEnd = System.nanoTime
 
-        println(f"[Image #$imageNum%4d] Beginning generation...")
+        output.text += f"[Image #$imageNum%4d] Beginning generation...\n"
         val fillTimeStart = System.nanoTime
         fillImage(image, imageNum)
         val fillTimeEnd = System.nanoTime
 
-        println(f"[Image #$imageNum%4d] printing object to file...")
+        output.text += f"[Image #$imageNum%4d] printing object to file...\n"
         val fileTimeStart = System.nanoTime
         val file = getFile
         writeImageToFile(image, file)
         val fileTimeEnd = System.nanoTime
 
-        println(f"[Image #$imageNum%4d] Art generation completed!")
-        println()
+        output.text += f"[Image #$imageNum%4d] Art generation completed!\n"
+        output.text += "\n"
 
         if (params.OpenFile) openFile(file)
 
@@ -81,16 +96,16 @@ class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, 
             val fillPercentage = fillTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
             val filePercentage = fileTime.asInstanceOf[Double] / (imageTime + fillTime + fileTime) * 100
 
-            println(f"[Image #$imageNum%4d] --- START DEBUG INFO ---")
-            println(f"[Image #$imageNum%4d]")
-            println(f"[Image #$imageNum%4d] Image Size: ${params.Width}%,d x ${params.Height}%,d")
-            println(f"[Image #$imageNum%4d] Total pixel count: ${params.Width * params.Height}%,d")
-            println(f"[Image #$imageNum%4d]")
-            println(f"[Image #$imageNum%4d] Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
-            println(f"[Image #$imageNum%4d] Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
-            println(f"[Image #$imageNum%4d] Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]")
-            println(f"[Image #$imageNum%4d]")
-            println(f"[Image #$imageNum%4d] --- END DEBUG INFO ---")
+            output.text += f"[Image #$imageNum%4d] --- START DEBUG INFO ---\n"
+            output.text += f"[Image #$imageNum%4d]\n"
+            output.text += f"[Image #$imageNum%4d] Image Size: ${params.Width}%,d x ${params.Height}%,d\n"
+            output.text += f"[Image #$imageNum%4d] Total pixel count: ${params.Width * params.Height}%,d\n"
+            output.text += f"[Image #$imageNum%4d]\n"
+            output.text += f"[Image #$imageNum%4d] Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]\n"
+            output.text += f"[Image #$imageNum%4d] Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]\n"
+            output.text += f"[Image #$imageNum%4d] Time to print Image to File:     $fileTime%,16dns (${fileTime / 1000000f}%,11.2fms) - [$filePercentage%6.2f%% of total time]\n"
+            output.text += f"[Image #$imageNum%4d]\n"
+            output.text += f"[Image #$imageNum%4d] --- END DEBUG INFO ---\n"
         }
 
     }
@@ -108,7 +123,7 @@ class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, 
         val write = image.getPixelWriter
 
         val progress: mutable.Set[(Int, Int)] = mutable.Set()
-        println(f"[Image #$imageNum%4d]     ...Setting seeds...")
+        output.text += f"[Image #$imageNum%4d]     ...Setting seeds...\n"
 
         (1 to params.SeedCount).foreach(_ => {
 
@@ -142,7 +157,7 @@ class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, 
         var pixelCount = params.SeedCount
 
         // while image is not filled
-        println(f"[Image #$imageNum%4d]     ...Starting rounds of generations...")
+        output.text += f"[Image #$imageNum%4d]     ...Starting rounds of generations...\n"
         whileLoop(progress.nonEmpty) {
 
             val time1 = System.nanoTime
@@ -162,7 +177,7 @@ class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, 
                             }
                         } else {
                             val x = (((chance + (delta * round)) % 2.0) + 2.0) % 2.0
-                            //println("result: " + x)
+                            //output.text += "result: " + x)
                             if (x < 1.0) {
                                 (((chance + (delta * round)) % 1.0) + 1.0) % 1.0
                             } else {
@@ -197,15 +212,13 @@ class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, 
             val time2 = System.nanoTime
             if (params.Debug && round % 10 == 0) {
 
-                val progress = (100 * pixelCount.asInstanceOf[Double] / (params.Width * params.Height)).asInstanceOf[Int]
-                setProgress(progress)
+                val progress = 100 * pixelCount.asInstanceOf[Double] / (params.Width * params.Height)
+                publish(pixelCount)
 
-                output.text += f"$progress %% done\n"
-
-                println(f"[Image #$imageNum%4d]     Round $round%6d: " +
+                output.text += f"[Image #$imageNum%4d]     Round $round%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
                         f"Pixels Completed: $pixelCount%,13d / ${params.Width * params.Height}%,13d " +
-                        f"[${100 * pixelCount.asInstanceOf[Double] / (params.Width * params.Height)}%6.2f%%]")
+                        f"[${100 * pixelCount.asInstanceOf[Double] / (params.Width * params.Height)}%6.2f%%]\n"
             }
             round += 1
 
@@ -245,6 +258,8 @@ class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, 
 
     def openFile(file: File): Unit = Desktop.getDesktop.open(file)
 
+
+    // TODO: add functionality for HueVariationDelta, SatVariationDelta, BrightVariationDelta
     def getVariedColor(color: Color): Color = {
 
         def getNewValue(value: Double, variation: Double, bounds: (Double, Double), circular: Boolean): Double = {
