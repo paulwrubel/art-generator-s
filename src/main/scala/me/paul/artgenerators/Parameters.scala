@@ -1,43 +1,43 @@
 package me.paul.artgenerators
 
-object Parameters {
+class Parameters {
 
-    var Debug: Boolean = DefaultParameters.Debug
-    var Version: String = DefaultParameters.Version
+    var Debug: Boolean = _
+    var Version: String = _
 
-    var ImageCount: Int = DefaultParameters.ImageCount
-    var OpenFile: Boolean = DefaultParameters.OpenFile
+    var ImageCount: Int = _
+    var OpenFile: Boolean = _
 
-    var Width: Int  = DefaultParameters.Width
-    var Height: Int = DefaultParameters.Height
+    var Width: Int  = _
+    var Height: Int = _
 
-    var Filename: String   = DefaultParameters.Filename
-    var Filepath: String   = DefaultParameters.Filepath
-    var FileFormat: String = DefaultParameters.FileFormat
+    var Filename: String = _
+    var Filepath: String = _
 
-    var SeedCount: Int = DefaultParameters.SeedCount
+    var FileFormat: String = _
 
-    var HueVariation: Double        = DefaultParameters.HueVariation
-    var SaturationVariation: Double = DefaultParameters.SaturationVariation
-    var BrightnessVariation: Double = DefaultParameters.BrightnessVariation
+    var SeedCount: Int = _
 
-    var HueVariationDelta: Double        = DefaultParameters.HueVariationDelta
-    var SaturationVariationDelta: Double = DefaultParameters.SaturationVariationDelta
-    var BrightnessVariationDelta: Double = DefaultParameters.BrightnessVariationDelta
-
-    var HueBounds: (Double, Double)        = DefaultParameters.HueBounds
-    var SaturationBounds: (Double, Double) = DefaultParameters.SaturationBounds
-    var BrightnessBounds: (Double, Double) = DefaultParameters.BrightnessBounds
-
-    var NorthSpreadChance: Double = DefaultParameters.NorthSpreadChance
-    var EastSpreadChance: Double  = DefaultParameters.EastSpreadChance
-    var SouthSpreadChance: Double = DefaultParameters.SouthSpreadChance
-    var WestSpreadChance: Double  = DefaultParameters.WestSpreadChance
+    var HueVariation: Double        = _
+    var SaturationVariation: Double = _
+    var BrightnessVariation: Double = _
 
     // unused for now
-    var NorthSpreadChanceDelta: Double = DefaultParameters.NorthSpreadChanceDelta
-    var EastSpreadChanceDelta: Double  = DefaultParameters.EastSpreadChanceDelta
-    var SouthSpreadChanceDelta: Double = DefaultParameters.SouthSpreadChanceDelta
-    var WestSpreadChanceDelta: Double  = DefaultParameters.WestSpreadChanceDelta
+    var HueVariationDelta: Double        = _
+    var SaturationVariationDelta: Double = _
+    var BrightnessVariationDelta: Double = _
 
+    var HueBounds: (Double, Double)        = _
+    var SaturationBounds: (Double, Double) = _
+    var BrightnessBounds: (Double, Double) = _
+
+    var NorthSpreadChance: Double = _
+    var EastSpreadChance: Double  = _
+    var SouthSpreadChance: Double = _
+    var WestSpreadChance: Double  = _
+
+    var NorthSpreadChanceDelta: Double = _
+    var EastSpreadChanceDelta: Double  = _
+    var SouthSpreadChanceDelta: Double = _
+    var WestSpreadChanceDelta: Double  = _
 }

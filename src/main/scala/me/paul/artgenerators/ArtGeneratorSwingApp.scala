@@ -1,16 +1,21 @@
 package me.paul.artgenerators
 
 import java.awt.Color
+import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
-import javax.swing.{UIManager, UnsupportedLookAndFeelException}
+import javax.swing.{SwingWorker, UIManager, UnsupportedLookAndFeelException}
 import javax.swing.text.{AbstractDocument, AttributeSet, DocumentFilter}
 import javax.swing.text.DocumentFilter.FilterBypass
 
-import scala.swing.GridBagPanel.{Anchor, Fill}
 import scala.swing._
 import scala.swing.event._
 
-object ArtGeneratorSwingApp extends SimpleSwingApplication {
+object ArtGeneratorSwingApp extends SimpleSwingApplication with PropertyChangeListener {
+
+    val DefaultColor: Color = Color.BLUE
+    val ValidColor: Color   = Color.GREEN
+    val WarningColor: Color = Color.YELLOW
+    val InvalidColor: Color = Color.RED
 
     try {
         // Set System L&F
@@ -59,128 +64,90 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         preferredSize = new Dimension(150, 30)
     }
 
-    val imageWidthFeedbackLabel = new Label
-    val imageHeightFeedbackLabel = new Label
+    val imageWidthFeedbackLabel: Label = new Label {
+        foreground = DefaultColor
+        text = f"Using value of ${DefaultParameters.Width} [DEFAULT]"
+    }
+    val imageHeightFeedbackLabel: Label = new Label {
+        foreground = DefaultColor
+        text = f"Using value of ${DefaultParameters.Height} [DEFAULT]"
+    }
 
-    val openFileCheckBoxLabel = new Label("Open File[s] After Generation?: ")
+    val openFileCheckBoxLabel = new Label("Open File[s] After Generation?")
     val openFileCheckBox: CheckBox = new CheckBox {
         selected = DefaultParameters.OpenFile
     }
-    val openFileFeedbackLabel = new Label
+    val openFileFeedbackLabel: Label = new Label {
+        foreground = DefaultColor
+        text = "File[s] will be opened [DEFAULT]"
+    }
 
     val startButtonLabel = new Label("Start Generation: ")
     val startButton = new Button("START")
+
+    val output: TextArea = new TextArea {
+        editable = false
+    }
+
+    val progressBar = new ProgressBar {
+        min = 0
+        max = 100
+        value = 0
+        labelPainted = true
+    }
 
     /* MainFrame component layout */
 
     def top: MainFrame = new MainFrame {
 
-        title = f"Art Generator S - ${Parameters.Version}"
+        title = f"Art Generator S - ${DefaultParameters.Version}"
 
-        contents = new GridBagPanel() {
+        contents = new BoxPanel(Orientation.Vertical) {
 
-            val c = new Constraints
+            def topLabelGrid: GridPanel = new GridPanel(1, 3) {
+                contents += attributeLabel
+                contents += valueLabel
+                contents += feedbackLabel
+            }
+            contents += topLabelGrid
 
-            // Main labels
+            contents += new Separator()
+            contents += Swing.VStrut(50)
 
-            c.grid = (0, 0)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(attributeLabel) = c
+            def settingsGrid: GridPanel = new GridPanel(3, 3) {
+                contents += imageWidthTextBoxLabel
+                contents += imageWidthTextBox
+                contents += imageWidthFeedbackLabel
+                contents += imageHeightTextBoxLabel
+                contents += imageHeightTextBox
+                contents += imageHeightFeedbackLabel
+                contents += openFileCheckBoxLabel
+                contents += openFileCheckBox
+                contents += openFileFeedbackLabel
+            }
+            contents += settingsGrid
 
-            c.grid = (1, 0)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(valueLabel) = c
+            contents += Swing.VStrut(50)
+            contents += new Separator()
 
-            c.grid = (2, 0)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(feedbackLabel) = c
+            def startRow: FlowPanel = new FlowPanel {
+                contents += startButtonLabel
+                contents += startButton
+            }
+            contents += startRow
 
-            // Width
+            contents += Swing.VStrut(50)
+            contents += new Separator()
 
-            c.grid = (0, 1)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(imageWidthTextBoxLabel) = c
-
-            c.grid = (1, 1)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(imageWidthTextBox) = c
-
-            c.grid = (2, 1)
-            c.weightx = 0.0
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(imageWidthFeedbackLabel) = c
-
-            // Height
-
-            c.grid = (0, 2)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(imageHeightTextBoxLabel) = c
-
-            c.grid = (1, 2)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(imageHeightTextBox) = c
-
-            c.grid = (2, 2)
-            c.weightx = 0.0
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(imageHeightFeedbackLabel) = c
-
-            // Open File Checkbox
-
-            c.grid = (0, 3)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(openFileCheckBoxLabel) = c
-
-            c.grid = (1, 3)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(openFileCheckBox) = c
-
-            c.grid = (2, 3)
-            c.weightx = 0.0
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(openFileFeedbackLabel) = c
-
-            // Start Button
-
-            c.grid = (1, 4)
-            c.weightx = 0.5
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(startButtonLabel) = c
-
-            c.grid = (2, 4)
-            c.weightx = 0.0
-            c.anchor = Anchor.LineStart
-            c.fill = Fill.None
-            layout(startButton) = c
+            contents += output
+            contents += progressBar
 
             // Other
 
             border = Swing.EmptyBorder(10)
         }
 
-        // size = new Dimension(500,500)
+        size = new Dimension(800, 600)
 
         peer.setLocationRelativeTo(null)
     }
@@ -198,46 +165,133 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
     reactions += {
         case ButtonClicked(`startButton`) =>
-            if (canStart)
-                Generator.startGeneration(Parameters.ImageCount)
-            else
-                println()
+            if (canStart) {
+                val params: Parameters = initializeParameters
+                val gen = new Generator(params, output)
+                gen.addPropertyChangeListener(this)
+                gen.execute()
+
+            } else {
                 // warning: fix errors
+            }
         case ButtonClicked(`openFileCheckBox`) =>
             if (openFileCheckBox.selected) {
-                Parameters.OpenFile = true
-                openFileFeedbackLabel.foreground = Color.GREEN
-                openFileFeedbackLabel.text = "File[s] will be opened"
+                openFileFeedbackLabel.foreground = DefaultColor
+                openFileFeedbackLabel.text = "File[s] will be opened [DEFAULT]"
             } else {
-                Parameters.OpenFile = false
-                openFileFeedbackLabel.foreground = Color.RED
+                openFileFeedbackLabel.foreground = ValidColor
                 openFileFeedbackLabel.text = "File[s] will NOT be opened"
             }
-            println("Parameters.OpenFile = " + Parameters.OpenFile)
         case EditDone(`imageWidthTextBox`) =>
             val text = imageWidthTextBox.text
 
-            if (text.length > 0 && text.length <= 9) {
-                Parameters.Width = text.toInt
+            if (text.length == 0) {
+                canStart = true
+                imageWidthFeedbackLabel.foreground = DefaultColor
+                imageWidthFeedbackLabel.text = s"Using value of ${DefaultParameters.Width} [DEFAULT]"
             } else if (text.length > 9) {
-                imageWidthTextBox.border = Swing.LineBorder(Color.RED, 2)
-                Parameters.Width = DefaultParameters.MaxWidth
+                canStart = false
+                imageWidthFeedbackLabel.foreground = InvalidColor
+                imageWidthFeedbackLabel.text = s"Invalid Width! Valid range is 1 - ${DefaultParameters.MaxWidth}"
             } else {
-                Parameters.Width = DefaultParameters.Width
+                val value = text.toInt
+                if (value > DefaultParameters.MaxWidth || value < 1) {
+                    canStart = false
+                    imageWidthFeedbackLabel.foreground = InvalidColor
+                    imageWidthFeedbackLabel.text = s"Invalid Width! Valid range is 1 - ${DefaultParameters.MaxWidth}"
+                } else {
+                    canStart = true
+                    imageWidthFeedbackLabel.foreground = ValidColor
+                    imageWidthFeedbackLabel.text = s"Using value of $value"
+                }
             }
-
-            println("Parameters.Width = " + Parameters.Width)
         case EditDone(`imageHeightTextBox`) =>
             val text = imageHeightTextBox.text
-            val value =
-                if (text.length > 0)
-                    text.toInt
-                else
-                    DefaultParameters.Height
 
-            Parameters.Height = value
-            println("Parameters.Height = " + Parameters.Height)
+            if (text.length == 0) {
+                canStart = true
+                imageHeightFeedbackLabel.foreground = DefaultColor
+                imageHeightFeedbackLabel.text = s"Using value of ${DefaultParameters.Height} [DEFAULT]"
+            } else if (text.length > 9) {
+                canStart = false
+                imageHeightFeedbackLabel.foreground = InvalidColor
+                imageHeightFeedbackLabel.text = s"Invalid Height! Valid range is 1 - ${DefaultParameters.MaxHeight}"
+            } else {
+                val value = text.toInt
+                if (value > DefaultParameters.MaxHeight || value < 1) {
+                    canStart = false
+                    imageHeightFeedbackLabel.foreground = InvalidColor
+                    imageHeightFeedbackLabel.text = s"Invalid Height! Valid range is 1 - ${DefaultParameters.MaxHeight}"
+                } else {
+                    canStart = true
+                    imageHeightFeedbackLabel.foreground = ValidColor
+                    imageHeightFeedbackLabel.text = s"Using value of $value"
+                }
+            }
+    }
 
+    override def propertyChange(event: PropertyChangeEvent): Unit = {
+        println("redfish")
+        if (event.getPropertyName == "progress") {
+            val progress: Int = event.getNewValue.asInstanceOf[Int]
+            println("progress = " + progress)
+            progressBar.value = progress
+        }
+        println("bluefish")
+    }
+
+    def initializeParameters: Parameters = {
+
+        val p = new Parameters
+
+        p.Debug = DefaultParameters.Debug
+        p.Version = DefaultParameters.Version
+
+        p.ImageCount = DefaultParameters.ImageCount
+        p.OpenFile = openFileCheckBox.selected
+
+        p.Width =
+            if (imageWidthTextBox.text == "")
+                DefaultParameters.Width
+            else
+                imageWidthTextBox.text.toInt
+
+        p.Height =
+            if (imageWidthTextBox.text == "")
+                DefaultParameters.Height
+            else
+                imageWidthTextBox.text.toInt
+
+        p.Filename = s"${p.Version}-${p.Width}x${p.Height}"
+        p.Filepath = s"./out/images/${p.Version}/${p.Width}x${p.Height}/"
+
+        p.FileFormat = DefaultParameters.FileFormat
+
+        p.SeedCount = DefaultParameters.SeedCount
+
+        p.HueVariation        = DefaultParameters.HueVariation
+        p.SaturationVariation = DefaultParameters.SaturationVariation
+        p.BrightnessVariation = DefaultParameters.BrightnessVariation
+
+        p.HueVariationDelta        = DefaultParameters.HueVariationDelta
+        p.SaturationVariationDelta = DefaultParameters.SaturationVariationDelta
+        p.BrightnessVariationDelta = DefaultParameters.BrightnessVariationDelta
+
+        p.HueBounds        = DefaultParameters.HueBounds
+        p.SaturationBounds = DefaultParameters.SaturationBounds
+        p.BrightnessBounds = DefaultParameters.BrightnessBounds
+
+        p.NorthSpreadChance = DefaultParameters.NorthSpreadChance
+        p.EastSpreadChance  = DefaultParameters.EastSpreadChance
+        p.SouthSpreadChance = DefaultParameters.SouthSpreadChance
+        p.WestSpreadChance  = DefaultParameters.WestSpreadChance
+
+        p.NorthSpreadChanceDelta  = DefaultParameters.NorthSpreadChanceDelta
+        p.EastSpreadChanceDelta   = DefaultParameters.EastSpreadChanceDelta
+        p.SouthSpreadChanceDelta  = DefaultParameters.SouthSpreadChanceDelta
+        p.WestSpreadChanceDelta   = DefaultParameters.WestSpreadChanceDelta
+
+        p
     }
 
 }

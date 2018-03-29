@@ -6,7 +6,7 @@ object DefaultParameters {
     val Version: String = "v0.4-alpha"
 
     val ImageCount: Int = 1
-    val OpenFile: Boolean = false
+    val OpenFile: Boolean = true
 
     // HD                 : 1280  x 720
     // Full HD            : 1920  × 1080
@@ -19,8 +19,8 @@ object DefaultParameters {
     val MaxWidth: Int  = 30720
     val MaxHeight: Int = 17280
 
-    val Filename: String   = f"$Version-${Width}x$Height"
-    val Filepath: String   = f"./out/images/$Version/${Width}x$Height/"
+    val Filename: String   = s"$Version-${Width}x$Height"
+    val Filepath: String   = s"./out/images/$Version/${Width}x$Height/"
     val FileFormat: String = "png"
 
     val SeedCount: Int = 1
@@ -29,11 +29,12 @@ object DefaultParameters {
     val SaturationVariation: Double = 2
     val BrightnessVariation: Double = 2
 
+    // unused for now
     val HueVariationDelta: Double        = 0
     val SaturationVariationDelta: Double = 0
     val BrightnessVariationDelta: Double = 0
 
-    val HueBounds: (Double, Double)        = (60, 30)
+    val HueBounds: (Double, Double)        = (0, 360)
     val SaturationBounds: (Double, Double) = (50, 100)
     val BrightnessBounds: (Double, Double) = (50, 100)
 
@@ -42,10 +43,9 @@ object DefaultParameters {
     val SouthSpreadChance: Double = 0
     val WestSpreadChance: Double  = 50
 
-    // unused for now
-    val NorthSpreadChanceDelta: Double = 5
-    val EastSpreadChanceDelta: Double  = 5
-    val SouthSpreadChanceDelta: Double = 5
-    val WestSpreadChanceDelta: Double  = 5
+    val NorthSpreadChanceDelta: Double = 20
+    val EastSpreadChanceDelta: Double  = 20
+    val SouthSpreadChanceDelta: Double = 20
+    val WestSpreadChanceDelta: Double  = 20
 
 }

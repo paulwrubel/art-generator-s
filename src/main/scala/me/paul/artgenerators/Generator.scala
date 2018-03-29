@@ -2,13 +2,16 @@ package me.paul.artgenerators
 
 import java.awt.Desktop
 import java.io.{File, IOException}
+
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.image.WritableImage
 import javafx.scene.paint.Color
 import javax.imageio.ImageIO
+import javax.swing.SwingWorker
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.swing.TextArea
 import scala.util.Random
 
 // TODO more detailed scaladoc
@@ -25,16 +28,18 @@ import scala.util.Random
   *
   */
 
-object Generator {
+class Generator(params: Parameters, output: TextArea) extends SwingWorker[Unit, Unit] {
 
     // TODO Comment explanations
 
-    def startGeneration(numOfImages: Int): Unit = {
+    override def doInBackground(): Unit = {
+        startGeneration()
+    }
 
-        println()
-        println("Starting program...")
+    def startGeneration(): Unit = {
+        output.text += "Starting program...\n"
 
-        (1 to numOfImages).foreach(generateArt)
+        (1 to params.ImageCount).foreach(generateArt)
 
         println()
         println("All images successfully printed!")
@@ -65,9 +70,9 @@ object Generator {
         println(f"[Image #$imageNum%4d] Art generation completed!")
         println()
 
-        if (Parameters.OpenFile) openFile(file)
+        if (params.OpenFile) openFile(file)
 
-        if (Parameters.Debug) {
+        if (params.Debug) {
             val imageTime = imageTimeEnd - imageTimeStart
             val fillTime = fillTimeEnd - fillTimeStart
             val fileTime = fileTimeEnd - fileTimeStart
@@ -78,8 +83,8 @@ object Generator {
 
             println(f"[Image #$imageNum%4d] --- START DEBUG INFO ---")
             println(f"[Image #$imageNum%4d]")
-            println(f"[Image #$imageNum%4d] Image Size: ${Parameters.Width}%,d x ${Parameters.Height}%,d")
-            println(f"[Image #$imageNum%4d] Total pixel count: ${Parameters.Width * Parameters.Height}%,d")
+            println(f"[Image #$imageNum%4d] Image Size: ${params.Width}%,d x ${params.Height}%,d")
+            println(f"[Image #$imageNum%4d] Total pixel count: ${params.Width * params.Height}%,d")
             println(f"[Image #$imageNum%4d]")
             println(f"[Image #$imageNum%4d] Time to create WritableImage:    $imageTime%,16dns (${imageTime / 1000000f}%,11.2fms) - [$imagePercentage%6.2f%% of total time]")
             println(f"[Image #$imageNum%4d] Time to assign colors to pixels: $fillTime%,16dns (${fillTime / 1000000f}%,11.2fms) - [$fillPercentage%6.2f%% of total time]")
@@ -105,24 +110,24 @@ object Generator {
         val progress: mutable.Set[(Int, Int)] = mutable.Set()
         println(f"[Image #$imageNum%4d]     ...Setting seeds...")
 
-        (1 to Parameters.SeedCount).foreach( _ => {
+        (1 to params.SeedCount).foreach(_ => {
 
             val condition = (p: (Int, Int)) => read.getColor(p._1, p._2).isOpaque
             val seed = doWhileYield[(Int, Int)](condition) {
-                (Random.nextInt(Parameters.Width), Random.nextInt(Parameters.Height))
+                (Random.nextInt(params.Width), Random.nextInt(params.Height))
             }
             val seedColor =
-                if (Parameters.HueBounds._2 < Parameters.HueBounds._1) {
+                if (params.HueBounds._2 < params.HueBounds._1) {
                     Color.hsb(
-                        randomBetween(Parameters.HueBounds._1)(360.0 + Parameters.HueBounds._2) % 360,
-                        randomBounds(Parameters.SaturationBounds) / 100,
-                        randomBounds(Parameters.BrightnessBounds) / 100
+                        randomBetween(params.HueBounds._1)(360.0 + params.HueBounds._2) % 360,
+                        randomBounds(params.SaturationBounds) / 100,
+                        randomBounds(params.BrightnessBounds) / 100
                     )
                 } else {
                     Color.hsb(
-                        randomBounds(Parameters.HueBounds),
-                        randomBounds(Parameters.SaturationBounds) / 100,
-                        randomBounds(Parameters.BrightnessBounds) / 100
+                        randomBounds(params.HueBounds),
+                        randomBounds(params.SaturationBounds) / 100,
+                        randomBounds(params.BrightnessBounds) / 100
                     )
                 }
 
@@ -134,7 +139,7 @@ object Generator {
         })
 
         var round = 0
-        var pixelCount = Parameters.SeedCount
+        var pixelCount = params.SeedCount
 
         // while image is not filled
         println(f"[Image #$imageNum%4d]     ...Starting rounds of generations...")
@@ -178,10 +183,10 @@ object Generator {
                         }
                     }
 
-                    if (p._2 != 0)                     handlePixel((p._1    , p._2 - 1), getSpreadChance(Parameters.NorthSpreadChance / 100, Parameters.NorthSpreadChanceDelta / 10000))
-                    if (p._1 != Parameters.Width - 1)  handlePixel((p._1 + 1, p._2    ), getSpreadChance(Parameters.EastSpreadChance  / 100, Parameters.EastSpreadChanceDelta  / 10000))
-                    if (p._2 != Parameters.Height - 1) handlePixel((p._1    , p._2 + 1), getSpreadChance(Parameters.SouthSpreadChance / 100, Parameters.SouthSpreadChanceDelta / 10000))
-                    if (p._1 != 0)                     handlePixel((p._1 - 1, p._2    ), getSpreadChance(Parameters.WestSpreadChance  / 100, Parameters.WestSpreadChanceDelta  / 10000))
+                    if (p._2 != 0)                     handlePixel((p._1    , p._2 - 1), getSpreadChance(params.NorthSpreadChance / 100, params.NorthSpreadChanceDelta / 10000))
+                    if (p._1 != params.Width - 1)  handlePixel((p._1 + 1, p._2    ), getSpreadChance(params.EastSpreadChance  / 100, params.EastSpreadChanceDelta  / 10000))
+                    if (p._2 != params.Height - 1) handlePixel((p._1    , p._2 + 1), getSpreadChance(params.SouthSpreadChance / 100, params.SouthSpreadChanceDelta / 10000))
+                    if (p._1 != 0)                     handlePixel((p._1 - 1, p._2    ), getSpreadChance(params.WestSpreadChance  / 100, params.WestSpreadChanceDelta  / 10000))
 
                     if (completed) {
                         progress -= p
@@ -190,12 +195,17 @@ object Generator {
             )
 
             val time2 = System.nanoTime
+            if (params.Debug && round % 10 == 0) {
 
-            if (Parameters.Debug && round % 10 == 0) {
+                val progress = (100 * pixelCount.asInstanceOf[Double] / (params.Width * params.Height)).asInstanceOf[Int]
+                setProgress(progress)
+
+                output.text += f"$progress %% done\n"
+
                 println(f"[Image #$imageNum%4d]     Round $round%6d: " +
                         f"Time: ${time2 - time1}%,15dns, " +
-                        f"Pixels Completed: $pixelCount%,13d / ${Parameters.Width * Parameters.Height}%,13d " +
-                        f"[${100 * pixelCount.asInstanceOf[Double] / (Parameters.Width * Parameters.Height)}%6.2f%%]")
+                        f"Pixels Completed: $pixelCount%,13d / ${params.Width * params.Height}%,13d " +
+                        f"[${100 * pixelCount.asInstanceOf[Double] / (params.Width * params.Height)}%6.2f%%]")
             }
             round += 1
 
@@ -203,7 +213,7 @@ object Generator {
     }
 
     def getFile: File = {
-        val dir = new File(Parameters.Filepath)
+        val dir = new File(params.Filepath)
         if ( !dir.exists && !dir.mkdirs() ) {
             throw new IOException("[ERROR]: COULD NOT CREATE NECESSARY DIRECTORIES")
         }
@@ -212,7 +222,7 @@ object Generator {
         val exists = (f: File) => f.exists()
         doWhileYield[File](exists) {
             count += 1
-            new File(Parameters.Filepath + Parameters.Filename + "_" + count + "." + Parameters.FileFormat)
+            new File(params.Filepath + params.Filename + "_" + count + "." + params.FileFormat)
         }
     }
 
@@ -225,7 +235,7 @@ object Generator {
     def writeImageToFile(image: WritableImage, file: File): Unit = {
 
         try {
-            ImageIO.write(SwingFXUtils.fromFXImage(image, null), Parameters.FileFormat, file)
+            ImageIO.write(SwingFXUtils.fromFXImage(image, null), params.FileFormat, file)
         } catch {
             case ioe: IOException =>
                 ioe.printStackTrace()
@@ -265,16 +275,16 @@ object Generator {
         }
 
         // get new values
-        val newHue = getNewValue(color.getHue, Parameters.HueVariation, Parameters.HueBounds, circular = true)
-        val newSat = getNewValue(color.getSaturation * 100, Parameters.SaturationVariation, Parameters.SaturationBounds, circular = false) / 100
-        val newBright = getNewValue(color.getBrightness * 100, Parameters.BrightnessVariation, Parameters.BrightnessBounds, circular = false) / 100
+        val newHue = getNewValue(color.getHue, params.HueVariation, params.HueBounds, circular = true)
+        val newSat = getNewValue(color.getSaturation * 100, params.SaturationVariation, params.SaturationBounds, circular = false) / 100
+        val newBright = getNewValue(color.getBrightness * 100, params.BrightnessVariation, params.BrightnessBounds, circular = false) / 100
         Color.hsb(newHue, newSat, newBright)
     }
 
-    def getImage: WritableImage = new WritableImage(Parameters.Width, Parameters.Height)
+    def getImage: WritableImage = new WritableImage(params.Width, params.Height)
 
     @tailrec
-    def whileLoop(condition: => Boolean)(func: => Unit): Unit = {
+    final def whileLoop(condition: => Boolean)(func: => Unit): Unit = {
         if (condition) {
             func
             whileLoop(condition)(func)
@@ -282,7 +292,7 @@ object Generator {
     }
 
     @tailrec
-    def whileYield[A](condition: => Boolean)(func: => A): A = {
+    final def whileYield[A](condition: => Boolean)(func: => A): A = {
         if (!condition) {
             func
         } else {
@@ -291,7 +301,7 @@ object Generator {
     }
 
     @tailrec
-    def doWhile[A](condition: A => Boolean)(func: => A): Unit = {
+    final def doWhile[A](condition: A => Boolean)(func: => A): Unit = {
         val newA = func
         if (condition(newA)) {
             doWhile(condition)(func)
@@ -299,7 +309,7 @@ object Generator {
     }
 
     @tailrec
-    def doWhileYield[A](condition: A => Boolean)(func: => A): A = {
+    final def doWhileYield[A](condition: A => Boolean)(func: => A): A = {
         val newA = func
         if (!condition(newA)) {
             newA
