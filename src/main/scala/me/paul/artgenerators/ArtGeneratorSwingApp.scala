@@ -1,7 +1,7 @@
 package me.paul.artgenerators
 
 import java.awt.{Color, Font}
-import java.beans.{PropertyChangeEvent, PropertyChangeListener}
+import java.io.File
 
 import javax.swing.{UIManager, UnsupportedLookAndFeelException}
 import javax.swing.text.{AbstractDocument, AttributeSet, DefaultCaret, DocumentFilter}
@@ -35,11 +35,15 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
     var canStart = true
 
-    /* Component creation */
+    /* ----- Component creation ----- */
+
+    // Top Level labels
 
     val attributeLabel = new Label("Attribute")
     val valueLabel = new Label("Value")
     val feedbackLabel = new Label("Feedback")
+
+    // width and height rows
 
     val imageWidthTextFieldLabel = new Label("Width: ")
     val imageHeightTextFieldLabel = new Label("Height: ")
@@ -70,6 +74,8 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         text = f"Using value of ${DefaultParameters.Height} [DEFAULT]"
     }
 
+    // open file check box
+
     val openFileCheckBoxLabel = new Label("Open File[s] After Generation?")
     val openFileCheckBox: CheckBox = new CheckBox {
         selected = DefaultParameters.OpenFile
@@ -79,18 +85,30 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         text = "File[s] will be opened [DEFAULT]"
     }
 
+    // filename
+
     val filenameTextFieldLabel = new Label("Filename: ")
     val filenameTextField: TextField = new TextField {
         text = ""
     }
-
-    val filepathTextFieldLabel = new Label("Filepath: ")
-    val filepathTextField: TextField = new TextField {
-        text = ""
+    val filenameFeedbackLabel: Label = new Label {
+        foreground = DefaultColor
+        text = "Filename: " + "\"" + s"${DefaultParameters.Version}-${DefaultParameters.Width}x${DefaultParameters.Height}" + "\"" + " [DEFAULT]"
     }
 
-    // TODO: Filename
-    // TODO: Filepath
+    // file path
+
+    val filepathFileChooserButtonLabel = new Label("Choose Filepath: ")
+    val filepathFileChooser: FileChooser = new FileChooser {
+        fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
+        selectedFile = new File(new File(ArtGeneratorSwingApp.this.getClass.getProtectionDomain.getCodeSource.getLocation.getFile).getParent
+                + s"/images/${DefaultParameters.Version}/${DefaultParameters.Width}x${DefaultParameters.Height}/")
+    }
+    val filepathFileChooserButton = new Button("CHOOSE FOLDER")
+    val filepathFeedbackLabel: Label = new Label {
+        foreground = DefaultColor
+        text = s"Output Folder: ${filepathFileChooser.selectedFile.getPath} [DEFAULT]"
+    }
 
     // TODO: ImageCount
     // TODO: SeedCount
@@ -103,8 +121,12 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     // TODO: SaturationBounds
     // TODO: BrightnessBounds
 
+    // start button
+
     val startButtonLabel = new Label("Start Generation: ")
     val startButton = new Button("START")
+
+    // program output
 
     val output: TextArea = new TextArea {
         rows = 10
@@ -114,15 +136,19 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         peer.getCaret.asInstanceOf[DefaultCaret].setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE)
     }
 
+    // progress bar
+
     val progressBar: ProgressBar = new ProgressBar {
         min = 0
         //max = 100
         value = 0
         labelPainted = true
         font = new Font(Font.MONOSPACED, Font.PLAIN, 14)
+
+        label = f"${0.asInstanceOf[Double]}%6.2f %%"
     }
 
-    /* MainFrame component layout */
+    /* ----- MainFrame component layout ----- */
 
     def top: MainFrame = new MainFrame {
 
@@ -130,7 +156,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
         contents = new BoxPanel(Orientation.Vertical) {
 
-            def topLabelGrid: GridPanel = new GridPanel(1, 3) {
+            def topLabelGrid: GridPanel = new GridPanel(1, 4) {
                 contents += attributeLabel
                 contents += valueLabel
                 contents += feedbackLabel
@@ -140,18 +166,39 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             contents += new Separator()
             contents += Swing.VStrut(50)
 
-            def settingsGrid: GridPanel = new GridPanel(3, 3) {
+            def settingsGrid: GridPanel = new GridPanel(0, 2) {
                 contents += imageWidthTextFieldLabel
                 contents += imageWidthTextField
-                contents += imageWidthFeedbackLabel
+
                 contents += imageHeightTextFieldLabel
                 contents += imageHeightTextField
-                contents += imageHeightFeedbackLabel
+
                 contents += openFileCheckBoxLabel
                 contents += openFileCheckBox
-                contents += openFileFeedbackLabel
+
+                contents += filenameTextFieldLabel
+                contents += filenameTextField
+
+                contents += filepathFileChooserButtonLabel
+                contents += filepathFileChooserButton
             }
-            contents += settingsGrid
+
+            def settingsFeedbackGrid: GridPanel = new GridPanel(0, 1) {
+
+                contents += imageWidthFeedbackLabel
+                contents += imageHeightFeedbackLabel
+                contents += openFileFeedbackLabel
+                contents += filenameFeedbackLabel
+                contents += filepathFeedbackLabel
+
+            }
+
+            def settingsSplitGrid: GridPanel = new GridPanel(1, 2) {
+
+                contents += settingsGrid
+                contents += settingsFeedbackGrid
+            }
+            contents += settingsSplitGrid
 
             contents += Swing.VStrut(50)
             contents += new Separator()
@@ -177,17 +224,20 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         }
 
         size = new Dimension(1000, 600)
+        minimumSize = new Dimension(400, 500)
 
         peer.setLocationRelativeTo(null)
     }
 
-    /* Event listeners */
+    /* ----- Event listeners ----- */
 
     val publishers = List(
         startButton,
         openFileCheckBox,
         imageWidthTextField,
-        imageHeightTextField
+        imageHeightTextField,
+        filenameTextField,
+        filepathFileChooserButton
     )
 
     listenTo(publishers: _*)
@@ -256,7 +306,26 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     imageHeightFeedbackLabel.text = s"Using value of $value"
                 }
             }
+        case EditDone(`filenameTextField`) =>
+            if (filenameTextField.text == "") {
+                filenameTextField.foreground = DefaultColor
+                filenameFeedbackLabel.text = "Filename: " + "\"" +
+                        s"${DefaultParameters.Version}-${DefaultParameters.Width}x${DefaultParameters.Height}" +
+                        "\"" + " [DEFAULT]"
+
+            } else {
+                filenameTextField.foreground = ValidColor
+                filenameFeedbackLabel.text = "Filename: " + "\"" + filenameTextField.text + "\""
+            }
+        case ButtonClicked(`filepathFileChooserButton`) =>
+            val result = filepathFileChooser.showOpenDialog(null)
+            if (result == FileChooser.Result.Approve) {
+                filepathFeedbackLabel.foreground = ValidColor
+                filepathFeedbackLabel.text = s"Output Folder: ${filepathFileChooser.selectedFile.getPath}"
+            }
     }
+
+    /* ----- Helper Methods ----- */
 
     def initializeParameters: Parameters = {
 
@@ -282,8 +351,13 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
         progressBar.max = p.Width * p.Height
 
-        p.Filename = s"${p.Version}-${p.Width}x${p.Height}"
-        p.Filepath = s"./out/images/${p.Version}/${p.Width}x${p.Height}/"
+        p.Filename =
+            if (filenameTextField.text == "")
+                s"${p.Version}-${p.Width}x${p.Height}"
+            else
+                filenameTextField.text
+
+        p.Filepath = filepathFileChooser.selectedFile
 
         p.FileFormat = DefaultParameters.FileFormat
 

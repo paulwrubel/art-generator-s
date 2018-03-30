@@ -42,13 +42,15 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
         val scalaChunks = chunks.asScala
 
         progressBar.value = scalaChunks.last
-        progressBar.label = f"${100 * progressBar.value.asInstanceOf[Double] / progressBar.max}%6.2f%%"
+        if (progressBar.label != "...PRINTING...")
+            progressBar.label = f"${100 * progressBar.value.asInstanceOf[Double] / progressBar.max}%6.2f %%"
 
     }
 
     override def done(): Unit = {
         progressBar.value = progressBar.max
-        progressBar.label = f"${100.asInstanceOf[Double]}%6.2f%%"
+        progressBar.label = f"${100.asInstanceOf[Double]}%6.2f %%"
+        progressBar.indeterminate = false
     }
 
     def startGeneration(): Unit = {
@@ -75,6 +77,9 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
         val fillTimeStart = System.nanoTime
         fillImage(image, imageNum)
         val fillTimeEnd = System.nanoTime
+
+        progressBar.indeterminate = true
+        progressBar.label = "...PRINTING..."
 
         output.text += f"[Image #$imageNum%4d] printing object to file...\n"
         val fileTimeStart = System.nanoTime
@@ -226,7 +231,8 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
     }
 
     def getFile: File = {
-        val dir = new File(params.Filepath)
+        val dir = params.Filepath
+        println(dir)
         if ( !dir.exists && !dir.mkdirs() ) {
             throw new IOException("[ERROR]: COULD NOT CREATE NECESSARY DIRECTORIES")
         }
@@ -235,7 +241,7 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
         val exists = (f: File) => f.exists()
         doWhileYield[File](exists) {
             count += 1
-            new File(params.Filepath + params.Filename + "_" + count + "." + params.FileFormat)
+            new File(params.Filepath.getPath + "/" + params.Filename + "_" + count + "." + params.FileFormat)
         }
     }
 

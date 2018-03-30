@@ -1,5 +1,7 @@
 package me.paul.artgenerators
 
+import java.io.File
+
 class Parameters {
 
     var Debug: Boolean = _
@@ -12,7 +14,7 @@ class Parameters {
     var Height: Int = _
 
     var Filename: String = _
-    var Filepath: String = _
+    var Filepath: File = _
 
     var FileFormat: String = _
 

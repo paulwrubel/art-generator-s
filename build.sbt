@@ -17,5 +17,7 @@ javaOptions += "-Djava.rmi.server.hostname=localhost"
 // define main class explicitly
 mainClass in Compile := Some("me.paul.artgenerators.ArtGeneratorSwingApp")
 
+assemblyJarName in assembly := name.value + "_" + scalaVersion.value + "-" + version.value + "_fat-executable.jar"
+
 // dependency on scala-swing
 libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "2.0.0-M2"

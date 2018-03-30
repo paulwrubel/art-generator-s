@@ -1,5 +1,7 @@
 package me.paul.artgenerators
 
+import java.io.File
+
 object DefaultParameters {
 
     val Debug: Boolean = true
@@ -19,8 +21,6 @@ object DefaultParameters {
     val MaxWidth: Int  = 30720
     val MaxHeight: Int = 17280
 
-    val Filename: String   = s"$Version-${Width}x$Height"
-    val Filepath: String   = s"./out/images/$Version/${Width}x$Height/"
     val FileFormat: String = "png"
 
     val SeedCount: Int = 1
