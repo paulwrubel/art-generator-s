@@ -5,7 +5,7 @@ import java.io.File
 object DefaultParameters {
 
     val Debug: Boolean = true
-    val Version: String = "v0.5-beta"
+    val Version: String = "v0.6-beta"
 
     val ImageCount: Int = 1
     val OpenFile: Boolean = true

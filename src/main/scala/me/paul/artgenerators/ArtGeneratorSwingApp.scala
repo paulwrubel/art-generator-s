@@ -3,6 +3,7 @@ package me.paul.artgenerators
 import java.awt.{Color, Dimension, Font}
 import java.io.File
 
+import javax.swing.SpringLayout.Constraints
 import javax.swing.{UIManager, UnsupportedLookAndFeelException}
 import javax.swing.text.{AbstractDocument, AttributeSet, DefaultCaret, DocumentFilter}
 import javax.swing.text.DocumentFilter.FilterBypass
@@ -107,7 +108,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     val filepathFileChooserButton = new Button("CHOOSE FOLDER")
     val filepathFeedbackLabel: Label = new Label {
         border = Swing.LineBorder(DefaultColor)
-        text = "Output Folder: "+ "\"" + s" ${filepathFileChooser.selectedFile.getPath}" + "\"" + " [DEFAULT]"
+        text = "Output Folder: "+ "\"" + s"${filepathFileChooser.selectedFile.getPath}" + "\"" + " [DEFAULT]"
     }
 
     // TODO: ImageCount
@@ -159,80 +160,215 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
             // For all settings
             contents += new ScrollPane(
-                // Holds Settings rows and top column labels
-                new BoxPanel(Orientation.Vertical) {
 
-                    // Settings Rows
-                    contents += new BoxPanel(Orientation.Horizontal) {
+                // Settings Rows inc. Top Labels
+                new GridBagPanel {
+
+                    val c = new Constraints()
+                    c.grid = (0, 0)
+                    c.insets = new Insets(3, 3, 3, 3)
+
+                    // Top labels for columns
+
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(attributeLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(valueLabel) = c
 
 
-                        // Inputs and labels
-                        contents += new FlowPanel(FlowPanel.Alignment.Left)(
-                            new GridPanel(0, 2) {
 
-                                vGap = 5
-                                hGap = 5
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.West
+                    c.fill = GridBagPanel.Fill.None
+                    layout(feedbackLabel) = c
 
-                                preferredSize = new Dimension(400, 200)
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.HGlue) = c
 
-                                // Top Labels for columns
-                                contents += attributeLabel
-                                contents += valueLabel
+                    // Separators
+                    c.gridx = 0
+                    c.gridy += 1
 
-                                contents += new Separator()
-                                contents += new Separator()
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.North
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(new Separator) = c
 
-//                                contents += Swing.VStrut(15)
-//                                contents += Swing.VStrut(15)
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.North
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(new Separator) = c
 
-                                contents += imageWidthTextFieldLabel
-                                contents += imageWidthTextField
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.North
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(new Separator) = c
 
-                                contents += imageHeightTextFieldLabel
-                                contents += imageHeightTextField
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.North
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(Swing.HGlue) = c
 
-                                contents += openFileCheckBoxLabel
-                                contents += openFileCheckBox
 
-                                contents += filenameTextFieldLabel
-                                contents += filenameTextField
+                    // Width
+                    c.gridx = 0
+                    c.gridy += 1
 
-                                contents += filepathFileChooserButtonLabel
-                                contents += filepathFileChooserButton
-                            }
-                        )
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(imageWidthTextFieldLabel) = c
 
-                        //contents += Swing.HGlue
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(imageWidthTextField) = c
 
-                        // Feedback
-                        contents += new FlowPanel(FlowPanel.Alignment.Right)(
-                            new GridPanel(0, 1) {
 
-                                vGap = 5
-                                hGap = 5
 
-                                // Top Labels for columns
-                                contents += feedbackLabel
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.West
+                    c.fill = GridBagPanel.Fill.Vertical
+                    layout(imageWidthFeedbackLabel) = c
 
-                                contents += new Separator()
-//                                contents += Swing.VStrut(15)
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.HGlue) = c
 
-                                contents += imageWidthFeedbackLabel
-                                contents += imageHeightFeedbackLabel
-                                contents += openFileFeedbackLabel
-                                contents += filenameFeedbackLabel
-                                contents += filepathFeedbackLabel
+                    // Height
+                    c.gridx = 0
+                    c.gridy += 1
 
-                            }
-                        )
-                    }
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(imageHeightTextFieldLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(imageHeightTextField) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.West
+                    c.fill = GridBagPanel.Fill.Vertical
+                    layout(imageHeightFeedbackLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.HGlue) = c
+
+
+
+                    // Open File Checkbox
+                    c.gridx = 0
+                    c.gridy += 1
+
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(openFileCheckBoxLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(openFileCheckBox) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.West
+                    c.fill = GridBagPanel.Fill.Vertical
+                    layout(openFileFeedbackLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.HGlue) = c
+
+                    // Filename
+                    c.gridx = 0
+                    c.gridy += 1
+
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(filenameTextFieldLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(filenameTextField) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.West
+                    c.fill = GridBagPanel.Fill.Vertical
+                    layout(filenameFeedbackLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.HGlue) = c
+
+                    // Filepath
+                    c.gridx = 0
+                    c.gridy += 1
+
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(filepathFileChooserButtonLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(filepathFileChooserButton) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.West
+                    c.fill = GridBagPanel.Fill.Vertical
+                    layout(filepathFeedbackLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.HGlue) = c
                 }
             ){
                 // Scroll Panel settings
 
             }
 
-            contents += Swing.VStrut(50)
+            //contents += Swing.VStrut(50)
+            contents += Swing.VGlue
             contents += new Separator()
 
             // Start button and label
@@ -384,7 +520,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             val result = filepathFileChooser.showOpenDialog(null)
             if (result == FileChooser.Result.Approve) {
                 filepathFeedbackLabel.border = Swing.LineBorder(ValidColor)
-                filepathFeedbackLabel.text = "Output Folder: "+ "\"" + s" ${filepathFileChooser.selectedFile.getPath}" + "\""
+                filepathFeedbackLabel.text = "Output Folder: "+ "\"" + s"${filepathFileChooser.selectedFile.getPath}" + "\""
             }
     }
 
