@@ -30,7 +30,7 @@ import scala.util.Random
   *
   */
 
-class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) extends SwingWorker[Unit, Int] {
+class Generator(params: Parameters, output: TextArea, sProgBar: ProgressBar, mProgBar: ProgressBar) extends SwingWorker[Unit, Int] {
 
     // TODO Comment explanations
 
@@ -41,21 +41,24 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
     override def process(chunks: util.List[Int]): Unit = {
         val scalaChunks = chunks.asScala
 
-        progressBar.value = scalaChunks.last
-        if (progressBar.label != "...PRINTING...")
-            progressBar.label = f"${100 * progressBar.value.asInstanceOf[Double] / progressBar.max}%6.2f %%"
+        sProgBar.value = scalaChunks.last
+        if (sProgBar.label != "...PRINTING...")
+            sProgBar.label = f"${100 * sProgBar.value.asInstanceOf[Double] / sProgBar.max}%6.2f %%"
 
     }
 
     override def done(): Unit = {
-        progressBar.value = progressBar.max
-        progressBar.label = f"${100.asInstanceOf[Double]}%6.2f %%"
-        progressBar.indeterminate = false
+        sProgBar.value = sProgBar.max
+        sProgBar.label = f"${100.asInstanceOf[Double]}%6.2f %%"
+        sProgBar.indeterminate = false
         ArtGeneratorSwingApp.setRunning(false)
     }
 
     def startGeneration(): Unit = {
         output.text += "Starting program...\n"
+
+        mProgBar.value = 0
+        mProgBar.label = f"${mProgBar.value}%,4d Images Completed"
 
         (1 to params.ImageCount).foreach(generateArt)
 
@@ -67,6 +70,7 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
 
     def generateArt(imageNum: Int): Unit = {
 
+        sProgBar.indeterminate = false
         output.text += f"[Image #$imageNum%4d] Starting art generation...\n"
 
         output.text += f"[Image #$imageNum%4d] Getting image object: [${params.Width} x ${params.Height}]...\n"
@@ -79,8 +83,8 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
         fillImage(image, imageNum)
         val fillTimeEnd = System.nanoTime
 
-        progressBar.indeterminate = true
-        progressBar.label = "...PRINTING..."
+        sProgBar.indeterminate = true
+        sProgBar.label = "...PRINTING..."
 
         output.text += f"[Image #$imageNum%4d] printing object to file...\n"
         val fileTimeStart = System.nanoTime
@@ -113,6 +117,9 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
             output.text += f"[Image #$imageNum%4d]\n"
             output.text += f"[Image #$imageNum%4d] --- END DEBUG INFO ---\n"
         }
+
+        mProgBar.value += 1
+        mProgBar.label = f"${mProgBar.value}%,4d Images Completed"
 
     }
 
@@ -233,7 +240,6 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
 
     def getFile: File = {
         val dir = params.Filepath
-        println(dir)
         if ( !dir.exists && !dir.mkdirs() ) {
             throw new IOException("[ERROR]: COULD NOT CREATE NECESSARY DIRECTORIES")
         }

@@ -3,7 +3,6 @@ package me.paul.artgenerators
 import java.awt.{Color, Dimension, Font}
 import java.io.File
 
-import javax.swing.SpringLayout.Constraints
 import javax.swing.{UIManager, UnsupportedLookAndFeelException}
 import javax.swing.text.{AbstractDocument, AttributeSet, DefaultCaret, DocumentFilter}
 import javax.swing.text.DocumentFilter.FilterBypass
@@ -49,30 +48,18 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     val imageWidthTextFieldLabel = new Label("Width: ")
     val imageHeightTextFieldLabel = new Label("Height: ")
     val imageWidthTextField, imageHeightTextField = new TextField {
-
-        object IntegralFilter extends DocumentFilter {
-            override def insertString(fb: FilterBypass, offs: Int, str: String, a: AttributeSet): Unit = {
-                if ( str.forall( c => c.isDigit) )
-                    super.insertString(fb, offs, str, a)
-            }
-            override def replace(fb: FilterBypass, offs: Int, l: Int, str: String, a: AttributeSet): Unit = {
-                if ( str.forall( c => c.isDigit) )
-                    super.replace(fb, offs, l, str, a)
-            }
-        }
-
         peer.getDocument.asInstanceOf[AbstractDocument].setDocumentFilter(IntegralFilter)
-
-        text = ""
     }
 
     val imageWidthFeedbackLabel: Label = new Label {
+        horizontalAlignment = Alignment.Left
         border = Swing.LineBorder(DefaultColor)
-        text = f"Using value of ${DefaultParameters.Width} [DEFAULT]"
+        text = f"Width: ${DefaultParameters.Width} [DEFAULT]"
     }
     val imageHeightFeedbackLabel: Label = new Label {
+        horizontalAlignment = Alignment.Left
         border = Swing.LineBorder(DefaultColor)
-        text = f"Using value of ${DefaultParameters.Height} [DEFAULT]"
+        text = f"Height: ${DefaultParameters.Height} [DEFAULT]"
     }
 
     // open file check box
@@ -82,6 +69,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         selected = DefaultParameters.OpenFile
     }
     val openFileFeedbackLabel: Label = new Label {
+        horizontalAlignment = Alignment.Left
         border = Swing.LineBorder(DefaultColor)
         text = "File[s] will be opened [DEFAULT]"
     }
@@ -89,10 +77,9 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     // filename
 
     val filenameTextFieldLabel = new Label("Filename: ")
-    val filenameTextField: TextField = new TextField {
-        text = ""
-    }
+    val filenameTextField: TextField = new TextField
     val filenameFeedbackLabel: Label = new Label {
+        horizontalAlignment = Alignment.Left
         border = Swing.LineBorder(DefaultColor)
         text = "Filename: " + "\"" + s"${DefaultParameters.Version}-${DefaultParameters.Width}x${DefaultParameters.Height}" + "\"" + " [DEFAULT]"
     }
@@ -107,8 +94,20 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     }
     val filepathFileChooserButton = new Button("CHOOSE FOLDER")
     val filepathFeedbackLabel: Label = new Label {
+        horizontalAlignment = Alignment.Left
         border = Swing.LineBorder(DefaultColor)
         text = "Output Folder: "+ "\"" + s"${filepathFileChooser.selectedFile.getPath}" + "\"" + " [DEFAULT]"
+    }
+
+    // Image Count
+    val imageCountTextFieldLabel = new Label("Number of Images: ")
+    val imageCountTextField: TextField = new TextField {
+        peer.getDocument.asInstanceOf[AbstractDocument].setDocumentFilter(IntegralFilter)
+    }
+    val imageCountFeedbackLabel: Label = new Label {
+        border = Swing.LineBorder(DefaultColor)
+        horizontalAlignment = Alignment.Left
+        text = s"Number of Images: ${DefaultParameters.ImageCount} [DEFAULT]"
     }
 
     // TODO: ImageCount
@@ -127,6 +126,11 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     val startButtonLabel = new Label("Start Generation: ")
     val startButton = new Button("START")
 
+    // clear button
+
+    val clearButtonLabel = new Label("Clear Console: ")
+    val clearButton = new Button("CLEAR")
+
     // program output
 
     val output: TextArea = new TextArea {
@@ -139,14 +143,22 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
     // progress bar
 
-    val progressBar: ProgressBar = new ProgressBar {
+    val singleImageProgressBar: ProgressBar = new ProgressBar {
         min = 0
-        //max = 100
         value = 0
         labelPainted = true
         font = new Font(Font.MONOSPACED, Font.PLAIN, 14)
 
         label = f"${0.asInstanceOf[Double]}%6.2f %%"
+    }
+
+    val multiImageProgressBar: ProgressBar = new ProgressBar {
+        min = 0
+        value = 0
+        labelPainted = true
+        font = new Font(Font.MONOSPACED, Font.PLAIN, 14)
+
+        label = f"${0}%,4d Images Completed"
     }
 
     /* ----- MainFrame component layout ----- */
@@ -156,10 +168,18 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         title = f"Art Generator S - ${DefaultParameters.Version}"
 
         // App Layout
-        contents = new BoxPanel(Orientation.Vertical) {
+        contents = new GridBagPanel {
+
+            val c = new Constraints()
+            c.grid = (0, 0)
+            c.insets = new Insets(5, 5, 5, 5)
 
             // For all settings
-            contents += new ScrollPane(
+            c.weightx = 1
+            c.weighty = 0.5
+            c.fill = GridBagPanel.Fill.Both
+
+            layout(new ScrollPane(
 
                 // Settings Rows inc. Top Labels
                 new GridBagPanel {
@@ -180,8 +200,6 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.anchor = GridBagPanel.Anchor.Center
                     c.fill = GridBagPanel.Fill.None
                     layout(valueLabel) = c
-
-
 
                     c.gridx += 1
                     c.weightx = 0
@@ -222,7 +240,6 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.fill = GridBagPanel.Fill.Horizontal
                     layout(Swing.HGlue) = c
 
-
                     // Width
                     c.gridx = 0
                     c.gridy += 1
@@ -238,12 +255,10 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.fill = GridBagPanel.Fill.Horizontal
                     layout(imageWidthTextField) = c
 
-
-
                     c.gridx += 1
                     c.weightx = 0
                     c.anchor = GridBagPanel.Anchor.West
-                    c.fill = GridBagPanel.Fill.Vertical
+                    c.fill = GridBagPanel.Fill.Both
                     layout(imageWidthFeedbackLabel) = c
 
                     c.gridx += 1
@@ -270,7 +285,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.gridx += 1
                     c.weightx = 0
                     c.anchor = GridBagPanel.Anchor.West
-                    c.fill = GridBagPanel.Fill.Vertical
+                    c.fill = GridBagPanel.Fill.Both
                     layout(imageHeightFeedbackLabel) = c
 
                     c.gridx += 1
@@ -278,8 +293,6 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.anchor = GridBagPanel.Anchor.Center
                     c.fill = GridBagPanel.Fill.None
                     layout(Swing.HGlue) = c
-
-
 
                     // Open File Checkbox
                     c.gridx = 0
@@ -299,7 +312,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.gridx += 1
                     c.weightx = 0
                     c.anchor = GridBagPanel.Anchor.West
-                    c.fill = GridBagPanel.Fill.Vertical
+                    c.fill = GridBagPanel.Fill.Both
                     layout(openFileFeedbackLabel) = c
 
                     c.gridx += 1
@@ -326,7 +339,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.gridx += 1
                     c.weightx = 0
                     c.anchor = GridBagPanel.Anchor.West
-                    c.fill = GridBagPanel.Fill.Vertical
+                    c.fill = GridBagPanel.Fill.Both
                     layout(filenameFeedbackLabel) = c
 
                     c.gridx += 1
@@ -353,7 +366,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.gridx += 1
                     c.weightx = 0
                     c.anchor = GridBagPanel.Anchor.West
-                    c.fill = GridBagPanel.Fill.Vertical
+                    c.fill = GridBagPanel.Fill.Both
                     layout(filepathFeedbackLabel) = c
 
                     c.gridx += 1
@@ -361,30 +374,97 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.anchor = GridBagPanel.Anchor.Center
                     c.fill = GridBagPanel.Fill.None
                     layout(Swing.HGlue) = c
+
+                    // Image count
+                    c.gridx = 0
+                    c.gridy += 1
+
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(imageCountTextFieldLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.Horizontal
+                    layout(imageCountTextField) = c
+
+                    c.gridx += 1
+                    c.weightx = 0
+                    c.anchor = GridBagPanel.Anchor.West
+                    c.fill = GridBagPanel.Fill.Both
+                    layout(imageCountFeedbackLabel) = c
+
+                    c.gridx += 1
+                    c.weightx = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.HGlue) = c
+
+                    // Final row glue
+                    c.gridx = 0
+                    c.gridy += 1
+
+                    c.weightx = 0
+                    c.weighty = 1
+                    c.anchor = GridBagPanel.Anchor.Center
+                    c.fill = GridBagPanel.Fill.None
+                    layout(Swing.VGlue) = c
+
                 }
             ){
                 // Scroll Panel settings
 
-            }
+            }) = c
 
-            //contents += Swing.VStrut(50)
-            contents += Swing.VGlue
-            contents += new Separator()
+            c.gridy += 1
+            c.weighty = 0
+            c.fill = GridBagPanel.Fill.Horizontal
+            layout(new Separator()) = c
 
             // Start button and label
-            contents += new FlowPanel {
+            c.gridy += 1
+            c.weighty = 0
+            c.fill = GridBagPanel.Fill.Horizontal
+            layout(new FlowPanel {
                 contents += startButtonLabel
                 contents += startButton
-            }
 
-            contents += new Separator()
+                contents += Swing.HStrut(10)
+
+                contents += clearButtonLabel
+                contents += clearButton
+            }) = c
+
+            c.gridy += 1
+            c.weighty = 0
+            c.fill = GridBagPanel.Fill.Horizontal
+            layout(new Separator()) = c
 
             // Output scroll pane
-            contents += new ScrollPane(output)
+            c.gridy += 1
+            c.weighty = 0.5
+            c.fill = GridBagPanel.Fill.Both
+            layout(new ScrollPane(output) {
+                preferredSize = new Dimension(600, 100)
+            }) = c
 
-            contents += new Separator()
+            c.gridy += 1
+            c.weighty = 0
+            c.fill = GridBagPanel.Fill.Horizontal
+            layout(new Separator()) = c
 
-            contents += progressBar
+            // Progress Bars
+            c.gridy += 1
+            c.weighty = 0
+            c.fill = GridBagPanel.Fill.Horizontal
+            layout(singleImageProgressBar) = c
+
+            c.gridy += 1
+            c.weighty = 0
+            c.fill = GridBagPanel.Fill.Horizontal
+            layout(multiImageProgressBar) = c
 
             // Other
 
@@ -401,11 +481,13 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
     val publishers = List(
         startButton,
+        clearButton,
         openFileCheckBox,
         imageWidthTextField,
         imageHeightTextField,
         filenameTextField,
-        filepathFileChooserButton
+        filepathFileChooserButton,
+        imageCountTextField
     )
 
     listenTo(publishers: _*)
@@ -415,11 +497,13 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             if (!isRunning) {
                 isRunning = true
                 val params: Parameters = initializeParameters
-                val gen = new Generator(params, output, progressBar)
+                val gen = new Generator(params, output, singleImageProgressBar, multiImageProgressBar)
                 gen.execute()
             } else {
                 // warning: fix errors
             }
+        case ButtonClicked(`clearButton`) =>
+            output.text = ""
         case ButtonClicked(`openFileCheckBox`) =>
             if (openFileCheckBox.selected) {
                 openFileFeedbackLabel.border = Swing.LineBorder(DefaultColor)
@@ -434,7 +518,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             if (text.length == 0) {
                 startButton.enabled = true
                 imageWidthFeedbackLabel.border = Swing.LineBorder(DefaultColor)
-                imageWidthFeedbackLabel.text = s"Using value of ${DefaultParameters.Width} [DEFAULT]"
+                imageWidthFeedbackLabel.text = s"Width: ${DefaultParameters.Width} [DEFAULT]"
                 filenameFeedbackLabel.text = "Filename: " + "\"" +
                         s"${DefaultParameters.Version}-" +
                         s"${DefaultParameters.Width}x" +
@@ -453,7 +537,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                 } else {
                     startButton.enabled = true
                     imageWidthFeedbackLabel.border = Swing.LineBorder(ValidColor)
-                    imageWidthFeedbackLabel.text = s"Using value of $value"
+                    imageWidthFeedbackLabel.text = s"Width: $value"
                     filenameFeedbackLabel.text = "Filename: " + "\"" +
                             s"${DefaultParameters.Version}-" +
                             s"${value}x" +
@@ -467,7 +551,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             if (text.length == 0) {
                 startButton.enabled = true
                 imageHeightFeedbackLabel.border = Swing.LineBorder(DefaultColor)
-                imageHeightFeedbackLabel.text = s"Using value of ${DefaultParameters.Height} [DEFAULT]"
+                imageHeightFeedbackLabel.text = s"Height: ${DefaultParameters.Height} [DEFAULT]"
                 filenameFeedbackLabel.text = "Filename: " + "\"" +
                         s"${DefaultParameters.Version}-" +
                         s"${if (imageWidthTextField.text == "") DefaultParameters.Width else imageWidthTextField.text}x" +
@@ -486,7 +570,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                 } else {
                     startButton.enabled = true
                     imageHeightFeedbackLabel.border = Swing.LineBorder(ValidColor)
-                    imageHeightFeedbackLabel.text = s"Using value of $value"
+                    imageHeightFeedbackLabel.text = s"Height: $value"
                     filenameFeedbackLabel.text = "Filename: " + "\"" +
                             s"${DefaultParameters.Version}-" +
                             s"${if (imageWidthTextField.text == "") DefaultParameters.Width else imageWidthTextField.text}x" +
@@ -522,6 +606,29 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                 filepathFeedbackLabel.border = Swing.LineBorder(ValidColor)
                 filepathFeedbackLabel.text = "Output Folder: "+ "\"" + s"${filepathFileChooser.selectedFile.getPath}" + "\""
             }
+        case EditDone(`imageCountTextField`) =>
+            val text = imageCountTextField.text
+
+            if (text.length == 0) {
+                startButton.enabled = true
+                imageCountFeedbackLabel.border = Swing.LineBorder(DefaultColor)
+                imageCountFeedbackLabel.text = s"Number of Images: ${DefaultParameters.ImageCount} [DEFAULT]"
+            } else if (text.length > 4) {
+                startButton.enabled = false
+                imageCountFeedbackLabel.border = Swing.LineBorder(InvalidColor)
+                imageCountFeedbackLabel.text = s"Invalid Number of Images! Valid range is 1 - ${DefaultParameters.MaxImageCount}"
+            } else {
+                val value = text.toInt
+                if (value > DefaultParameters.MaxImageCount || value < 1) {
+                    startButton.enabled = false
+                    imageCountFeedbackLabel.border = Swing.LineBorder(InvalidColor)
+                    imageCountFeedbackLabel.text = s"Invalid Number of Images! Valid range is 1 - ${DefaultParameters.MaxImageCount}"
+                } else {
+                    startButton.enabled = true
+                    imageCountFeedbackLabel.border = Swing.LineBorder(ValidColor)
+                    imageCountFeedbackLabel.text = s"Number of Images: $value"
+                }
+            }
     }
 
     /* ----- Helper Methods ----- */
@@ -537,7 +644,12 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         p.Debug = DefaultParameters.Debug
         p.Version = DefaultParameters.Version
 
-        p.ImageCount = DefaultParameters.ImageCount
+        p.ImageCount =
+            if (imageHeightTextField.text == "")
+                DefaultParameters.ImageCount
+            else
+                imageCountTextField.text.toInt
+
         p.OpenFile = openFileCheckBox.selected
 
         p.Width =
@@ -552,7 +664,8 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             else
                 imageHeightTextField.text.toInt
 
-        progressBar.max = p.Width * p.Height
+        singleImageProgressBar.max = p.Width * p.Height
+        multiImageProgressBar.max = p.ImageCount
 
         p.Filename =
             if (filenameTextField.text == "")
@@ -589,6 +702,17 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         p.WestSpreadChanceDelta   = DefaultParameters.WestSpreadChanceDelta
 
         p
+    }
+
+    object IntegralFilter extends DocumentFilter {
+        override def insertString(fb: FilterBypass, offs: Int, str: String, a: AttributeSet): Unit = {
+            if ( str.forall( c => c.isDigit) )
+                super.insertString(fb, offs, str, a)
+        }
+        override def replace(fb: FilterBypass, offs: Int, l: Int, str: String, a: AttributeSet): Unit = {
+            if ( str.forall( c => c.isDigit) )
+                super.replace(fb, offs, l, str, a)
+        }
     }
 
 }

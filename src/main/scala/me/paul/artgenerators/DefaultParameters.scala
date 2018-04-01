@@ -8,6 +8,7 @@ object DefaultParameters {
     val Version: String = "v0.6-beta"
 
     val ImageCount: Int = 1
+    val MaxImageCount: Int = 1000
     val OpenFile: Boolean = true
 
     // HD                 : 1280  x 720
