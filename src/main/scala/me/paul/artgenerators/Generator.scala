@@ -51,6 +51,7 @@ class Generator(params: Parameters, output: TextArea, progressBar: ProgressBar) 
         progressBar.value = progressBar.max
         progressBar.label = f"${100.asInstanceOf[Double]}%6.2f %%"
         progressBar.indeterminate = false
+        ArtGeneratorSwingApp.setRunning(false)
     }
 
     def startGeneration(): Unit = {

@@ -1,6 +1,6 @@
 package me.paul.artgenerators
 
-import java.awt.{Color, Font}
+import java.awt.{Color, Dimension, Font}
 import java.io.File
 
 import javax.swing.{UIManager, UnsupportedLookAndFeelException}
@@ -11,6 +11,8 @@ import scala.swing._
 import scala.swing.event._
 
 object ArtGeneratorSwingApp extends SimpleSwingApplication {
+
+    var isRunning: Boolean = false
 
     val DefaultColor: Color = Color.BLUE
     val ValidColor: Color   = Color.GREEN
@@ -32,8 +34,6 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         case e: Exception =>
             e.printStackTrace()
     }
-
-    var canStart = true
 
     /* ----- Component creation ----- */
 
@@ -66,11 +66,11 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     }
 
     val imageWidthFeedbackLabel: Label = new Label {
-        foreground = DefaultColor
+        border = Swing.LineBorder(DefaultColor)
         text = f"Using value of ${DefaultParameters.Width} [DEFAULT]"
     }
     val imageHeightFeedbackLabel: Label = new Label {
-        foreground = DefaultColor
+        border = Swing.LineBorder(DefaultColor)
         text = f"Using value of ${DefaultParameters.Height} [DEFAULT]"
     }
 
@@ -81,7 +81,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         selected = DefaultParameters.OpenFile
     }
     val openFileFeedbackLabel: Label = new Label {
-        foreground = DefaultColor
+        border = Swing.LineBorder(DefaultColor)
         text = "File[s] will be opened [DEFAULT]"
     }
 
@@ -92,7 +92,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         text = ""
     }
     val filenameFeedbackLabel: Label = new Label {
-        foreground = DefaultColor
+        border = Swing.LineBorder(DefaultColor)
         text = "Filename: " + "\"" + s"${DefaultParameters.Version}-${DefaultParameters.Width}x${DefaultParameters.Height}" + "\"" + " [DEFAULT]"
     }
 
@@ -106,8 +106,8 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     }
     val filepathFileChooserButton = new Button("CHOOSE FOLDER")
     val filepathFeedbackLabel: Label = new Label {
-        foreground = DefaultColor
-        text = s"Output Folder: ${filepathFileChooser.selectedFile.getPath} [DEFAULT]"
+        border = Swing.LineBorder(DefaultColor)
+        text = "Output Folder: "+ "\"" + s" ${filepathFileChooser.selectedFile.getPath}" + "\"" + " [DEFAULT]"
     }
 
     // TODO: ImageCount
@@ -154,65 +154,97 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
         title = f"Art Generator S - ${DefaultParameters.Version}"
 
+        // App Layout
         contents = new BoxPanel(Orientation.Vertical) {
 
-            def topLabelGrid: GridPanel = new GridPanel(1, 4) {
-                contents += attributeLabel
-                contents += valueLabel
-                contents += feedbackLabel
-            }
-            contents += topLabelGrid
+            // For all settings
+            contents += new ScrollPane(
+                // Holds Settings rows and top column labels
+                new BoxPanel(Orientation.Vertical) {
 
-            contents += new Separator()
+                    // Settings Rows
+                    contents += new BoxPanel(Orientation.Horizontal) {
+
+
+                        // Inputs and labels
+                        contents += new FlowPanel(FlowPanel.Alignment.Left)(
+                            new GridPanel(0, 2) {
+
+                                vGap = 5
+                                hGap = 5
+
+                                preferredSize = new Dimension(400, 200)
+
+                                // Top Labels for columns
+                                contents += attributeLabel
+                                contents += valueLabel
+
+                                contents += new Separator()
+                                contents += new Separator()
+
+//                                contents += Swing.VStrut(15)
+//                                contents += Swing.VStrut(15)
+
+                                contents += imageWidthTextFieldLabel
+                                contents += imageWidthTextField
+
+                                contents += imageHeightTextFieldLabel
+                                contents += imageHeightTextField
+
+                                contents += openFileCheckBoxLabel
+                                contents += openFileCheckBox
+
+                                contents += filenameTextFieldLabel
+                                contents += filenameTextField
+
+                                contents += filepathFileChooserButtonLabel
+                                contents += filepathFileChooserButton
+                            }
+                        )
+
+                        //contents += Swing.HGlue
+
+                        // Feedback
+                        contents += new FlowPanel(FlowPanel.Alignment.Right)(
+                            new GridPanel(0, 1) {
+
+                                vGap = 5
+                                hGap = 5
+
+                                // Top Labels for columns
+                                contents += feedbackLabel
+
+                                contents += new Separator()
+//                                contents += Swing.VStrut(15)
+
+                                contents += imageWidthFeedbackLabel
+                                contents += imageHeightFeedbackLabel
+                                contents += openFileFeedbackLabel
+                                contents += filenameFeedbackLabel
+                                contents += filepathFeedbackLabel
+
+                            }
+                        )
+                    }
+                }
+            ){
+                // Scroll Panel settings
+
+            }
+
             contents += Swing.VStrut(50)
-
-            def settingsGrid: GridPanel = new GridPanel(0, 2) {
-                contents += imageWidthTextFieldLabel
-                contents += imageWidthTextField
-
-                contents += imageHeightTextFieldLabel
-                contents += imageHeightTextField
-
-                contents += openFileCheckBoxLabel
-                contents += openFileCheckBox
-
-                contents += filenameTextFieldLabel
-                contents += filenameTextField
-
-                contents += filepathFileChooserButtonLabel
-                contents += filepathFileChooserButton
-            }
-
-            def settingsFeedbackGrid: GridPanel = new GridPanel(0, 1) {
-
-                contents += imageWidthFeedbackLabel
-                contents += imageHeightFeedbackLabel
-                contents += openFileFeedbackLabel
-                contents += filenameFeedbackLabel
-                contents += filepathFeedbackLabel
-
-            }
-
-            def settingsSplitGrid: GridPanel = new GridPanel(1, 2) {
-
-                contents += settingsGrid
-                contents += settingsFeedbackGrid
-            }
-            contents += settingsSplitGrid
-
-            contents += Swing.VStrut(50)
             contents += new Separator()
 
-            def startRow: FlowPanel = new FlowPanel {
+            // Start button and label
+            contents += new FlowPanel {
                 contents += startButtonLabel
                 contents += startButton
             }
-            contents += startRow
 
             contents += new Separator()
 
-            def outputScrollPane: ScrollPane = new ScrollPane(output)
-            contents += outputScrollPane
+            // Output scroll pane
+            contents += new ScrollPane(output)
 
             contents += new Separator()
 
@@ -244,88 +276,123 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
     reactions += {
         case ButtonClicked(`startButton`) =>
-            if (canStart) {
+            if (!isRunning) {
+                isRunning = true
                 val params: Parameters = initializeParameters
                 val gen = new Generator(params, output, progressBar)
                 gen.execute()
-
             } else {
                 // warning: fix errors
             }
         case ButtonClicked(`openFileCheckBox`) =>
             if (openFileCheckBox.selected) {
-                openFileFeedbackLabel.foreground = DefaultColor
+                openFileFeedbackLabel.border = Swing.LineBorder(DefaultColor)
                 openFileFeedbackLabel.text = "File[s] will be opened [DEFAULT]"
             } else {
-                openFileFeedbackLabel.foreground = ValidColor
+                openFileFeedbackLabel.border = Swing.LineBorder(ValidColor)
                 openFileFeedbackLabel.text = "File[s] will NOT be opened"
             }
         case EditDone(`imageWidthTextField`) =>
             val text = imageWidthTextField.text
 
             if (text.length == 0) {
-                canStart = true
-                imageWidthFeedbackLabel.foreground = DefaultColor
+                startButton.enabled = true
+                imageWidthFeedbackLabel.border = Swing.LineBorder(DefaultColor)
                 imageWidthFeedbackLabel.text = s"Using value of ${DefaultParameters.Width} [DEFAULT]"
+                filenameFeedbackLabel.text = "Filename: " + "\"" +
+                        s"${DefaultParameters.Version}-" +
+                        s"${DefaultParameters.Width}x" +
+                        s"${if (imageHeightTextField.text == "") DefaultParameters.Height else imageHeightTextField.text}" +
+                        "\"" + " [DEFAULT]"
             } else if (text.length > 9) {
-                canStart = false
-                imageWidthFeedbackLabel.foreground = InvalidColor
+                startButton.enabled = false
+                imageWidthFeedbackLabel.border = Swing.LineBorder(InvalidColor)
                 imageWidthFeedbackLabel.text = s"Invalid Width! Valid range is 1 - ${DefaultParameters.MaxWidth}"
             } else {
                 val value = text.toInt
                 if (value > DefaultParameters.MaxWidth || value < 1) {
-                    canStart = false
-                    imageWidthFeedbackLabel.foreground = InvalidColor
+                    startButton.enabled = false
+                    imageWidthFeedbackLabel.border = Swing.LineBorder(InvalidColor)
                     imageWidthFeedbackLabel.text = s"Invalid Width! Valid range is 1 - ${DefaultParameters.MaxWidth}"
                 } else {
-                    canStart = true
-                    imageWidthFeedbackLabel.foreground = ValidColor
+                    startButton.enabled = true
+                    imageWidthFeedbackLabel.border = Swing.LineBorder(ValidColor)
                     imageWidthFeedbackLabel.text = s"Using value of $value"
+                    filenameFeedbackLabel.text = "Filename: " + "\"" +
+                            s"${DefaultParameters.Version}-" +
+                            s"${value}x" +
+                            s"${if (imageHeightTextField.text == "") DefaultParameters.Height else imageHeightTextField.text}" +
+                            "\"" + " [DEFAULT]"
                 }
             }
         case EditDone(`imageHeightTextField`) =>
             val text = imageHeightTextField.text
 
             if (text.length == 0) {
-                canStart = true
-                imageHeightFeedbackLabel.foreground = DefaultColor
+                startButton.enabled = true
+                imageHeightFeedbackLabel.border = Swing.LineBorder(DefaultColor)
                 imageHeightFeedbackLabel.text = s"Using value of ${DefaultParameters.Height} [DEFAULT]"
+                filenameFeedbackLabel.text = "Filename: " + "\"" +
+                        s"${DefaultParameters.Version}-" +
+                        s"${if (imageWidthTextField.text == "") DefaultParameters.Width else imageWidthTextField.text}x" +
+                        s"${DefaultParameters.Height}" +
+                        "\"" + " [DEFAULT]"
             } else if (text.length > 9) {
-                canStart = false
-                imageHeightFeedbackLabel.foreground = InvalidColor
+                startButton.enabled = false
+                imageHeightFeedbackLabel.border = Swing.LineBorder(InvalidColor)
                 imageHeightFeedbackLabel.text = s"Invalid Height! Valid range is 1 - ${DefaultParameters.MaxHeight}"
             } else {
                 val value = text.toInt
                 if (value > DefaultParameters.MaxHeight || value < 1) {
-                    canStart = false
-                    imageHeightFeedbackLabel.foreground = InvalidColor
+                    startButton.enabled = false
+                    imageHeightFeedbackLabel.border = Swing.LineBorder(InvalidColor)
                     imageHeightFeedbackLabel.text = s"Invalid Height! Valid range is 1 - ${DefaultParameters.MaxHeight}"
                 } else {
-                    canStart = true
-                    imageHeightFeedbackLabel.foreground = ValidColor
+                    startButton.enabled = true
+                    imageHeightFeedbackLabel.border = Swing.LineBorder(ValidColor)
                     imageHeightFeedbackLabel.text = s"Using value of $value"
+                    filenameFeedbackLabel.text = "Filename: " + "\"" +
+                            s"${DefaultParameters.Version}-" +
+                            s"${if (imageWidthTextField.text == "") DefaultParameters.Width else imageWidthTextField.text}x" +
+                            s"$value" +
+                            "\"" + " [DEFAULT]"
                 }
             }
         case EditDone(`filenameTextField`) =>
             if (filenameTextField.text == "") {
-                filenameTextField.foreground = DefaultColor
+                startButton.enabled = true
+                filenameFeedbackLabel.border = Swing.LineBorder(DefaultColor)
                 filenameFeedbackLabel.text = "Filename: " + "\"" +
-                        s"${DefaultParameters.Version}-${DefaultParameters.Width}x${DefaultParameters.Height}" +
+                        s"${DefaultParameters.Version}-" +
+                        s"${if (imageWidthTextField.text == "") DefaultParameters.Width else imageWidthTextField.text}x" +
+                        s"${if (imageHeightTextField.text == "") DefaultParameters.Height else imageHeightTextField.text}" +
                         "\"" + " [DEFAULT]"
-
+            } else if (filenameTextField.text.contains("/") || filenameTextField.text.contains("\\")) {
+                startButton.enabled = false
+                filenameFeedbackLabel.border = Swing.LineBorder(InvalidColor)
+                filenameFeedbackLabel.text = "Filename cannot contain slashes ('/' or '\\')"
+            } else if (filenameTextField.text.contains(".")) {
+                startButton.enabled = true
+                filenameFeedbackLabel.border = Swing.LineBorder(WarningColor)
+                filenameFeedbackLabel.text = "Filename: " + "\"" + filenameTextField.text + "\"" + " (WARN: use of '.' may have unintended consequences)"
             } else {
-                filenameTextField.foreground = ValidColor
+                startButton.enabled = true
+                filenameFeedbackLabel.border = Swing.LineBorder(ValidColor)
                 filenameFeedbackLabel.text = "Filename: " + "\"" + filenameTextField.text + "\""
             }
         case ButtonClicked(`filepathFileChooserButton`) =>
             val result = filepathFileChooser.showOpenDialog(null)
             if (result == FileChooser.Result.Approve) {
-                filepathFeedbackLabel.foreground = ValidColor
-                filepathFeedbackLabel.text = s"Output Folder: ${filepathFileChooser.selectedFile.getPath}"
+                filepathFeedbackLabel.border = Swing.LineBorder(ValidColor)
+                filepathFeedbackLabel.text = "Output Folder: "+ "\"" + s" ${filepathFileChooser.selectedFile.getPath}" + "\""
             }
     }
 
     /* ----- Helper Methods ----- */
+
+    def setRunning(r: Boolean): Unit = {
+        isRunning = r
+    }
 
     def initializeParameters: Parameters = {
 

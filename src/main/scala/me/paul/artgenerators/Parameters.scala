@@ -42,4 +42,38 @@ class Parameters {
     var EastSpreadChanceDelta: Double  = _
     var SouthSpreadChanceDelta: Double = _
     var WestSpreadChanceDelta: Double  = _
+
+    override def toString: String = {
+        val s: String = {
+            "Debug = " + Debug + "\n" +
+                    "Version = " + Version + "\n" +
+                    "ImageCount = " + ImageCount + "\n" +
+                    "OpenFile = " + OpenFile + "\n" +
+                    "Width = " + Width + "\n" +
+                    "Height = " + Height + "\n" +
+                    "Filename = " + Filename + "\n" +
+                    "Filepath = " + Filepath + "\n" +
+                    "FileFormat = " + FileFormat + "\n" +
+                    "SeedCount = " + SeedCount + "\n" +
+                    "HueVariation = " + HueVariation + "\n" +
+                    "SaturationVariation = " + SaturationVariation + "\n" +
+                    "BrightnessVariation = " + BrightnessVariation + "\n" +
+                    "HueVariationDelta = " + HueVariationDelta + "\n" +
+                    "SaturationVariationDelta = " + SaturationVariationDelta + "\n" +
+                    "BrightnessVariationDelta = " + BrightnessVariationDelta + "\n" +
+                    "HueBounds = " + HueBounds + "\n" +
+                    "SaturationBounds = " + SaturationBounds + "\n" +
+                    "BrightnessBounds = " + BrightnessBounds + "\n" +
+                    "NorthSpreadChance = " + NorthSpreadChance + "\n" +
+                    "EastSpreadChance = " + EastSpreadChance + "\n" +
+                    "SouthSpreadChance = " + SouthSpreadChance + "\n" +
+                    "WestSpreadChance = " + WestSpreadChance + "\n" +
+                    "NorthSpreadChanceDelta = " + NorthSpreadChanceDelta + "\n" +
+                    "EastSpreadChanceDelta = " + EastSpreadChanceDelta + "\n" +
+                    "SouthSpreadChanceDelta = " + SouthSpreadChanceDelta + "\n" +
+                    "WestSpreadChanceDelta = " + WestSpreadChanceDelta
+        }
+        s
+    }
+
 }
