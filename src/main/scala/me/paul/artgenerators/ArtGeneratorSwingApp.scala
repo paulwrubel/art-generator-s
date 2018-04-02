@@ -134,7 +134,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     // program output
 
     val output: TextArea = new TextArea {
-        rows = 10
+        rows = 1
         columns = 100
         editable = false
         font = new Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -176,7 +176,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
 
             // For all settings
             c.weightx = 1
-            c.weighty = 0.5
+            c.weighty = 0.0
             c.fill = GridBagPanel.Fill.Both
 
             layout(new ScrollPane(
@@ -412,9 +412,13 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.fill = GridBagPanel.Fill.None
                     layout(Swing.VGlue) = c
 
+
+                    //minimumSize = new Dimension(800, 250)
+
                 }
             ){
                 // Scroll Panel settings
+                minimumSize = new Dimension(800, 250)
 
             }) = c
 
@@ -446,8 +450,8 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             c.gridy += 1
             c.weighty = 0.5
             c.fill = GridBagPanel.Fill.Both
-            layout(new ScrollPane(output) {
-                preferredSize = new Dimension(600, 100)
+            layout(new ScrollPane(output){
+                minimumSize = new Dimension(800, 20)
             }) = c
 
             c.gridy += 1
@@ -459,7 +463,9 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
             c.gridy += 1
             c.weighty = 0
             c.fill = GridBagPanel.Fill.Horizontal
-            layout(singleImageProgressBar) = c
+            layout(singleImageProgressBar{
+                minimumSize = new Dimension(0, 50)
+            }) = c
 
             c.gridy += 1
             c.weighty = 0
@@ -472,7 +478,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         }
 
         size = new Dimension(1000, 600)
-        minimumSize = new Dimension(400, 500)
+        minimumSize = new Dimension(300, 300)
 
         peer.setLocationRelativeTo(null)
     }
