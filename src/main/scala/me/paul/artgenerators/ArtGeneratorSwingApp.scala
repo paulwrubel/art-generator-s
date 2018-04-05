@@ -134,7 +134,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
     // program output
 
     val output: TextArea = new TextArea {
-        rows = 1
+        rows = 15
         columns = 100
         editable = false
         font = new Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -168,18 +168,10 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
         title = f"Art Generator S - ${DefaultParameters.Version}"
 
         // App Layout
-        contents = new GridBagPanel {
-
-            val c = new Constraints()
-            c.grid = (0, 0)
-            c.insets = new Insets(5, 5, 5, 5)
+        contents = new SplitPane(Orientation.Horizontal) {
 
             // For all settings
-            c.weightx = 1
-            c.weighty = 0.0
-            c.fill = GridBagPanel.Fill.Both
-
-            layout(new ScrollPane(
+            topComponent = new ScrollPane(
 
                 // Settings Rows inc. Top Labels
                 new GridBagPanel {
@@ -410,7 +402,7 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                     c.weighty = 1
                     c.anchor = GridBagPanel.Anchor.Center
                     c.fill = GridBagPanel.Fill.None
-                    layout(Swing.VGlue) = c
+                    layout(Swing.VStrut(300)) = c
 
 
                     //minimumSize = new Dimension(800, 250)
@@ -420,61 +412,75 @@ object ArtGeneratorSwingApp extends SimpleSwingApplication {
                 // Scroll Panel settings
                 minimumSize = new Dimension(800, 250)
 
-            }) = c
+            }
 
-            c.gridy += 1
-            c.weighty = 0
-            c.fill = GridBagPanel.Fill.Horizontal
-            layout(new Separator()) = c
+            bottomComponent = new GridBagPanel {
 
-            // Start button and label
-            c.gridy += 1
-            c.weighty = 0
-            c.fill = GridBagPanel.Fill.Horizontal
-            layout(new FlowPanel {
-                contents += startButtonLabel
-                contents += startButton
+                val c = new Constraints()
+                c.insets = new Insets(5, 5, 5, 5)
+                c.grid = (0, 0)
+                c.weightx = 1
 
-                contents += Swing.HStrut(10)
+                c.weighty = 0
+                c.anchor = GridBagPanel.Anchor.Center
+                c.fill = GridBagPanel.Fill.Horizontal
+                layout(new Separator()) = c
 
-                contents += clearButtonLabel
-                contents += clearButton
-            }) = c
+                // Start button and label
+                c.gridy += 1
+                c.weighty = 0
+                c.anchor = GridBagPanel.Anchor.Center
+                c.fill = GridBagPanel.Fill.Horizontal
+                layout(new FlowPanel {
+                    contents += startButtonLabel
+                    contents += startButton
 
-            c.gridy += 1
-            c.weighty = 0
-            c.fill = GridBagPanel.Fill.Horizontal
-            layout(new Separator()) = c
+                    contents += Swing.HStrut(10)
 
-            // Output scroll pane
-            c.gridy += 1
-            c.weighty = 0.5
-            c.fill = GridBagPanel.Fill.Both
-            layout(new ScrollPane(output){
-                minimumSize = new Dimension(800, 20)
-            }) = c
+                    contents += clearButtonLabel
+                    contents += clearButton
+                }) = c
 
-            c.gridy += 1
-            c.weighty = 0
-            c.fill = GridBagPanel.Fill.Horizontal
-            layout(new Separator()) = c
+                c.gridy += 1
+                c.weighty = 0
+                c.anchor = GridBagPanel.Anchor.Center
+                c.fill = GridBagPanel.Fill.Horizontal
+                layout(new Separator()) = c
 
-            // Progress Bars
-            c.gridy += 1
-            c.weighty = 0
-            c.fill = GridBagPanel.Fill.Horizontal
-            layout(singleImageProgressBar{
-                minimumSize = new Dimension(0, 50)
-            }) = c
+                // Output scroll pane
+                c.gridy += 1
+                c.weighty = 1
+                c.anchor = GridBagPanel.Anchor.Center
+                c.fill = GridBagPanel.Fill.Both
+                layout(new ScrollPane(output) {
+                    minimumSize = new Dimension(800, 20)
+                }) = c
 
-            c.gridy += 1
-            c.weighty = 0
-            c.fill = GridBagPanel.Fill.Horizontal
-            layout(multiImageProgressBar) = c
+                c.gridy += 1
+                c.weighty = 0
+                c.anchor = GridBagPanel.Anchor.Center
+                c.fill = GridBagPanel.Fill.Horizontal
+                layout(new Separator()) = c
 
-            // Other
+                // Progress Bars
+                c.gridy += 1
+                c.weighty = 0
+                c.anchor = GridBagPanel.Anchor.Center
+                c.fill = GridBagPanel.Fill.Horizontal
+                layout(singleImageProgressBar) = c
 
-            border = Swing.EmptyBorder(10)
+                c.gridy += 1
+                c.weighty = 0
+                c.anchor = GridBagPanel.Anchor.Center
+                c.fill = GridBagPanel.Fill.Horizontal
+                layout(multiImageProgressBar) = c
+
+                // Other
+
+                border = Swing.EmptyBorder(10)
+            }
+
+            continuousLayout = true
         }
 
         size = new Dimension(1000, 600)
